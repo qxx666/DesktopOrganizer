@@ -1,6 +1,7 @@
 <Window x:Class="DesktopOrganizer.Windows.ZoneWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:DesktopOrganizer.Models"
         Title="分区"
         Width="360" Height="300"
         WindowStyle="None"
@@ -199,16 +200,21 @@
                                            VerticalAlignment="Center"
                                            RenderOptions.BitmapScalingMode="HighQuality" />
 
+                                    <!-- 名称区：字号 / 行高 / 字体与 FileItemViewModel 里的测量常量保持一致，
+                                         高度和截断方式由视图模型按最长的名称算出来，保证名称完整显示。 -->
                                     <TextBlock Grid.Row="1"
-                                               Margin="1,3,1,0"
-                                               MaxHeight="30"
+                                               Margin="1,2,1,0"
+                                               Height="{Binding NameBoxHeight}"
                                                Text="{Binding DisplayName}"
                                                Foreground="{Binding NameBrush}"
-                                               FontSize="11"
-                                               LineHeight="13"
+                                               FontFamily="{x:Static models:FileItemViewModel.NameFontFamily}"
+                                               FontSize="{x:Static models:FileItemViewModel.NameFontSize}"
+                                               LineHeight="{x:Static models:FileItemViewModel.NameLineHeight}"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               VerticalAlignment="Center"
                                                TextAlignment="Center"
                                                TextWrapping="Wrap"
-                                               TextTrimming="CharacterEllipsis" />
+                                               TextTrimming="{Binding NameTrimming}" />
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

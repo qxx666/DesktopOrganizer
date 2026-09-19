@@ -26,6 +26,18 @@ public sealed class AppConfig
     /// <summary>图标显示尺寸（DIP）。</summary>
     public double IconSize { get; set; } = 48;
 
+    /// <summary>
+    /// 完整显示文件 / 文件夹名称：条目会自动加宽、换行把名称显示全，不做省略号截断。
+    /// 关掉则退回紧凑模式，名称最多两行、超出用省略号。
+    /// </summary>
+    public bool FullItemName { get; set; } = true;
+
+    /// <summary>完整显示时，名称最多占用几行（1 ~ 5）。只有名称特别长时才会用到后几行。</summary>
+    public int ItemNameMaxLines { get; set; } = 3;
+
+    /// <summary>条目宽度档位：0 = 紧凑，1 = 标准，2 = 宽松。</summary>
+    public int ItemWidthMode { get; set; } = 1;
+
     /// <summary>分区背景不透明度 0.3 ~ 1.0。</summary>
     public double PanelOpacity { get; set; } = 0.78;
 

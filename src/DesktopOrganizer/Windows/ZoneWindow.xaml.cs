@@ -259,7 +259,10 @@ public partial class ZoneWindow : Window
                 _zone.Descending,
                 config.ShowHiddenFiles,
                 Math.Clamp(config.IconSize, 24, 96),
-                nameBrush);
+                nameBrush,
+                config.FullItemName,
+                config.ItemNameMaxLines,
+                config.ItemWidthMode);
         }
         catch
         {
@@ -870,6 +873,8 @@ public partial class ZoneWindow : Window
             new("按类型排序", () => SetSortMode(ZoneSortMode.Type), IsChecked: _zone.SortMode == ZoneSortMode.Type),
             new(_zone.Descending ? "改为升序" : "改为降序", ToggleSortDirection),
             new("", null, IsSeparator: true),
+            new("完整显示名称（不缩略）", ToggleFullItemName, IsChecked: ZoneManager.Instance.Config.FullItemName),
+            new("", null, IsSeparator: true),
             new(locked ? "解锁布局" : "锁定布局", ToggleLayoutLock, IsChecked: locked),
             new(_zone.Collapsed ? "展开分区" : "折叠分区", ToggleCollapse),
             new("", null, IsSeparator: true),
@@ -932,6 +937,15 @@ public partial class ZoneWindow : Window
     }
 
     private void RevealZoneFolder() => ZoneFolderService.RevealInExplorer(_zone.FolderPath);
+
+    /// <summary>切换「完整显示名称」。这是全局设置，切换后刷新所有分区。</summary>
+    private void ToggleFullItemName()
+    {
+        var config = ZoneManager.Instance.Config;
+        config.FullItemName = !config.FullItemName;
+        ZoneManager.Instance.SaveNow();
+        ZoneManager.Instance.RefreshAll();
+    }
 
     private void ToggleCollapse_Click(object sender, RoutedEventArgs e) => ToggleCollapse();
 

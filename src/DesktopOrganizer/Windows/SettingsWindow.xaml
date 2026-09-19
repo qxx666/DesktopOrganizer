@@ -95,6 +95,29 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="名称显示" Style="{StaticResource FieldLabel}" Width="104" />
+                        <StackPanel x:Name="FullNameHost" Orientation="Horizontal" />
+                        <TextBlock Style="{StaticResource HintText}"
+                                   Margin="10,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Text="完整＝换行把名称显示全，不省略" />
+                    </StackPanel>
+
+                    <StackPanel x:Name="NameLinesRow" Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="名称最多行数" Style="{StaticResource FieldLabel}" Width="104" />
+                        <StackPanel x:Name="NameLinesHost" Orientation="Horizontal" />
+                        <TextBlock Style="{StaticResource HintText}"
+                                   Margin="10,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Text="名称特别长时的换行上限" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="条目宽度" Style="{StaticResource FieldLabel}" Width="104" />
+                        <StackPanel x:Name="ItemWidthHost" Orientation="Horizontal" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                         <TextBlock Text="面板通透度" Style="{StaticResource FieldLabel}" Width="104" />
                         <StackPanel x:Name="OpacityHost" Orientation="Horizontal" />
                     </StackPanel>

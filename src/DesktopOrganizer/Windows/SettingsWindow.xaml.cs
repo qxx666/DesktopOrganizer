@@ -20,6 +20,9 @@ public partial class SettingsWindow : Window
     private RadioButton[] _opacityButtons = Array.Empty<RadioButton>();
     private RadioButton[] _themeButtons = Array.Empty<RadioButton>();
     private RadioButton[] _sortButtons = Array.Empty<RadioButton>();
+    private RadioButton[] _fullNameButtons = Array.Empty<RadioButton>();
+    private RadioButton[] _nameLinesButtons = Array.Empty<RadioButton>();
+    private RadioButton[] _itemWidthButtons = Array.Empty<RadioButton>();
 
     public SettingsWindow()
     {
@@ -68,6 +71,41 @@ public partial class SettingsWindow : Window
             ("大小", ZoneSortMode.Size),
             ("类型", ZoneSortMode.Type),
         });
+
+        _fullNameButtons = BuildSegment(FullNameHost, "FullName", new (string, object)[]
+        {
+            ("完整", true),
+            ("紧凑", false),
+        });
+
+        _nameLinesButtons = BuildSegment(NameLinesHost, "NameLines", new (string, object)[]
+        {
+            ("2 行", 2),
+            ("3 行", 3),
+            ("4 行", 4),
+            ("5 行", 5),
+        });
+
+        _itemWidthButtons = BuildSegment(ItemWidthHost, "ItemWidth", new (string, object)[]
+        {
+            ("紧凑", 0),
+            ("标准", 1),
+            ("宽松", 2),
+        });
+
+        foreach (var radio in _fullNameButtons)
+        {
+            radio.Checked += (_, _) => SyncNameRows();
+            radio.Unchecked += (_, _) => SyncNameRows();
+        }
+    }
+
+    /// <summary>「名称最多行数」只在完整模式下有意义，紧凑模式下置灰。</summary>
+    private void SyncNameRows()
+    {
+        var full = GetSelected(_fullNameButtons) is true;
+        NameLinesRow.IsEnabled = full;
+        NameLinesRow.Opacity = full ? 1.0 : 0.45;
     }
 
     private static RadioButton[] BuildSegment(Panel host, string groupName, (string Label, object Value)[] options)
@@ -144,6 +182,11 @@ public partial class SettingsWindow : Window
         SelectValue(_opacityButtons, Nearest(OpacityOptions, config.PanelOpacity));
         SelectValue(_themeButtons, config.Appearance);
         SelectValue(_sortButtons, config.DefaultSortMode);
+        SelectValue(_fullNameButtons, config.FullItemName);
+        SelectValue(_nameLinesButtons, Math.Clamp(config.ItemNameMaxLines, 2, 5));
+        SelectValue(_itemWidthButtons, Math.Clamp(config.ItemWidthMode, 0, 2));
+
+        SyncNameRows();
 
         StartupCheck.IsChecked = config.StartWithWindows;
         TopmostCheck.IsChecked = config.AlwaysOnTop;
@@ -203,6 +246,21 @@ public partial class SettingsWindow : Window
         if (GetSelected(_sortButtons) is ZoneSortMode sortMode)
         {
             config.DefaultSortMode = sortMode;
+        }
+
+        if (GetSelected(_fullNameButtons) is bool fullName)
+        {
+            config.FullItemName = fullName;
+        }
+
+        if (GetSelected(_nameLinesButtons) is int nameLines)
+        {
+            config.ItemNameMaxLines = nameLines;
+        }
+
+        if (GetSelected(_itemWidthButtons) is int itemWidth)
+        {
+            config.ItemWidthMode = itemWidth;
         }
 
         config.StartWithWindows = StartupCheck.IsChecked == true;
@@ -278,6 +336,11 @@ public partial class SettingsWindow : Window
         SelectValue(_opacityButtons, 0.78d);
         SelectValue(_themeButtons, ZoneAppearance.Dark);
         SelectValue(_sortButtons, ZoneSortMode.Name);
+        SelectValue(_fullNameButtons, true);
+        SelectValue(_nameLinesButtons, 3);
+        SelectValue(_itemWidthButtons, 1);
+
+        SyncNameRows();
 
         HotkeyBox.Text = "Ctrl+Alt+D";
 
