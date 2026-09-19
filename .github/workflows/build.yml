@@ -49,8 +49,10 @@ jobs:
             Write-Host "已还原 $ico"
           }
 
+      # 注意：restore 必须带上 -r（runtime identifier），否则 assets 文件里没有
+      # 对应平台的目标，后面的 --no-restore build 会报 NETSDK1047。
       - name: 还原依赖
-        run: dotnet restore src/DesktopOrganizer/DesktopOrganizer.csproj
+        run: dotnet restore src/DesktopOrganizer/DesktopOrganizer.csproj -r ${{ matrix.runtime }}
 
       # 说明：这里刻意不加 -warnaserror。不同 SDK 小版本会冒出新的告警
       # （例如 NuGet 供应链审计 NU19xx），本地干净不代表 CI 干净，
