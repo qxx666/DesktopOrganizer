@@ -1,9 +1,9 @@
 name: 构建 Windows 程序
 
+# 只做持续集成验证；发版（打标签出 Release）由 release.yml 负责
 on:
   push:
     branches: [ main, master ]
-    tags: [ 'v*' ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
@@ -78,11 +78,3 @@ jobs:
           name: ${{ matrix.artifact }}
           path: src/DesktopOrganizer/bin/Release/net8.0-windows/${{ matrix.runtime }}/publish/DesktopOrganizer.exe
           if-no-files-found: error
-
-      - name: 打标签时附带发布说明
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: src/DesktopOrganizer/bin/Release/net8.0-windows/${{ matrix.runtime }}/publish/DesktopOrganizer.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
