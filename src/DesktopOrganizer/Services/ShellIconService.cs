@@ -16,6 +16,9 @@ public static class ShellIconService
 {
     private static readonly Guid IID_IImageList = new("46EB5926-582E-4017-9FDF-E8998DAA0950");
 
+    /// <summary>缓存条目上限。一张 48x48 的位图约 9 KB，600 张约 5 MB，够用且可控。</summary>
+    private const int CacheLimit = 600;
+
     private static readonly ConcurrentDictionary<string, BitmapSource> Cache = new(StringComparer.OrdinalIgnoreCase);
 
     private static NativeMethods.IImageList? _imageListExLarge;
@@ -36,6 +39,7 @@ public static class ShellIconService
 
         var icon = CreateIcon(path, isDirectory);
         Cache[key] = icon;
+        TrimIfNeeded();
         return icon;
     }
 
@@ -258,6 +262,47 @@ public static class ShellIconService
         bitmap.Render(visual);
         bitmap.Freeze();
         return bitmap;
+    }
+
+    /// <summary>
+    /// 丢掉「按具体路径缓存」的图标（文件夹、快捷方式、exe 等）。
+    /// 按扩展名缓存的图标复用率高，留着更划算。
+    /// </summary>
+    private static void DropPathKeyedIcons()
+    {
+        foreach (var key in Cache.Keys)
+        {
+            if (key.StartsWith("dir:", StringComparison.Ordinal) ||
+                key.StartsWith("file:", StringComparison.Ordinal))
+            {
+                Cache.TryRemove(key, out _);
+            }
+        }
+    }
+
+    private static void TrimIfNeeded()
+    {
+        if (Cache.Count <= CacheLimit)
+        {
+            return;
+        }
+
+        DropPathKeyedIcons();
+
+        // 极端情况下（扩展名种类本身就超上限）才整体清空
+        if (Cache.Count > CacheLimit)
+        {
+            Cache.Clear();
+        }
+    }
+
+    /// <summary>
+    /// 释放图标占用的内存。分区全部隐藏时调用——此时界面上看不到图标，
+    /// 下次显示时从 Shell 重新取一次即可（很快，用户无感）。
+    /// </summary>
+    public static void ReleaseMemory()
+    {
+        DropPathKeyedIcons();
     }
 
     /// <summary>清空缓存（例如用户切换了默认应用之后）。</summary>

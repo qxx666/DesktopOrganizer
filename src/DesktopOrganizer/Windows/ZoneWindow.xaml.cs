@@ -21,6 +21,18 @@ public partial class ZoneWindow : Window
     private const double MinZoneHeight = 110;
     private const double SnapThreshold = 10;
 
+    // 名称用的画刷与主题绑定，只有两套。缓存并冻结后不再每次刷新都新建
+    // （未冻结的画刷会被 WPF 挂上变更通知，条目多时是一笔不小的常驻开销）。
+    private static readonly SolidColorBrush DarkNameBrush = CreateFrozenBrush(0xE6, 0xEB, 0xF3);
+    private static readonly SolidColorBrush LightNameBrush = CreateFrozenBrush(0x25, 0x2C, 0x38);
+
+    private static SolidColorBrush CreateFrozenBrush(byte r, byte g, byte b)
+    {
+        var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
+        brush.Freeze();
+        return brush;
+    }
+
     private readonly ZoneConfig _zone;
     private readonly DispatcherTimer _watcherDebounce;
 
@@ -235,8 +247,7 @@ public partial class ZoneWindow : Window
         var config = ZoneManager.Instance.Config;
         var dark = config.Appearance == ZoneAppearance.Dark;
 
-        var nameBrush = new SolidColorBrush(
-            dark ? Color.FromRgb(0xE6, 0xEB, 0xF3) : Color.FromRgb(0x25, 0x2C, 0x38));
+        var nameBrush = dark ? DarkNameBrush : LightNameBrush;
 
         if (!Directory.Exists(_zone.FolderPath))
         {
@@ -295,6 +306,9 @@ public partial class ZoneWindow : Window
                                | NotifyFilters.LastWrite
                                | NotifyFilters.Size,
                 IncludeSubdirectories = false,
+                // 只关心文件名级别的变动，缓冲区用最小值即可（默认 8 KB，
+                // 分区多了也是一笔常驻开销）
+                InternalBufferSize = 4 * 1024,
                 EnableRaisingEvents = true,
             };
 
@@ -1133,7 +1147,15 @@ public partial class ZoneWindow : Window
         _watcherDebounce.Stop();
     }
 
-    public void HideZone() => Hide();
+    public void HideZone()
+    {
+        Hide();
+
+        // 隐藏后释放列表。界面上看不见，没必要继续挂载几百个条目和它们的图标引用；
+        // 下次 ShowZone 会重新加载（图标有缓存，重建很快，用户无感）。
+        ItemsHost.ItemsSource = null;
+        ShellIconService.ReleaseMemory();
+    }
 
     public void ShowZone()
     {

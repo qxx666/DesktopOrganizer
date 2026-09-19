@@ -21,6 +21,8 @@ public sealed class ZoneManager
     private readonly Dictionary<string, ZoneWindow> _windows = new();
     private readonly DispatcherTimer _saveTimer;
 
+    private DateTime _lastMemoryCollect = DateTime.MinValue;
+
     private ZoneManager()
     {
         _saveTimer = new DispatcherTimer(DispatcherPriority.Background)
@@ -270,6 +272,15 @@ public sealed class ZoneManager
         foreach (var window in _windows.Values)
         {
             window.HideZone();
+        }
+
+        // 界面已经全部释放，做一次非阻塞回收把内存还给系统。
+        // 频繁切换时不必每次都收，间隔 30 秒以上才真正收一次。
+        var now = DateTime.Now;
+        if ((now - _lastMemoryCollect).TotalSeconds >= 30)
+        {
+            _lastMemoryCollect = now;
+            GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
         }
     }
 

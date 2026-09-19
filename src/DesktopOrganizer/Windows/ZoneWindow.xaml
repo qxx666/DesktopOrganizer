@@ -198,7 +198,7 @@
                                            Stretch="Uniform"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
-                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                           RenderOptions.BitmapScalingMode="LowQuality" />
 
                                     <!-- 名称区：字号 / 行高 / 字体与 FileItemViewModel 里的测量常量保持一致，
                                          高度和截断方式由视图模型按最长的名称算出来，保证名称完整显示。 -->

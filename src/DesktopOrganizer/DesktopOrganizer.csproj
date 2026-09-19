@@ -33,6 +33,30 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
+  <!-- ===================== 常驻托盘应用的内存优化 =====================
+       这个程序开机就一直挂在后台，内存占用比启动速度更重要，
+       以下几项都是「牺牲一点点的通用性 / 停顿，换更低的常驻内存」。 -->
+
+  <PropertyGroup>
+    <!-- 不需要 ICU 全球化数据：排序一律用 StringComparer.Ordinal（与文化无关），
+         日期格式也是固定写法的 yyyy-MM-dd，不依赖区域设置。
+         关掉后不必加载 icu.dll，体积和常驻内存都能省下一大块。 -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- 后台（并发）GC 需要额外的工作集来做并发标记。托盘程序对 GC 停顿无感知，
+         关掉它换更低的常驻内存。 -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+
+    <!-- 工作站 GC（默认）+ 不保留虚拟内存：空闲内存及时还给系统，
+         任务管理器里看到的占用会明显低一些。 -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <RetainVMGarbageCollection>false</RetainVMGarbageCollection>
+
+    <!-- 关掉动态 PGO 与热重载支持：减少 JIT 与运行时的常驻开销。 -->
+    <TieredPGO>false</TieredPGO>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+  </PropertyGroup>
+
   <ItemGroup>
     <Resource Include="Assets\app.ico" Condition="Exists('Assets\app.ico')" />
   </ItemGroup>
