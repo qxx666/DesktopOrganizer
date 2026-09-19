@@ -72,24 +72,34 @@ jobs:
           -o slim
           --nologo
 
+      - name: 解析版本号
+        id: vars
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: 整理待发布文件
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path out | Out-Null
-          Copy-Item standalone/DesktopOrganizer.exe out/DesktopOrganizer-独立版.exe
-          Copy-Item slim/DesktopOrganizer.exe       out/DesktopOrganizer-精简版.exe
+          # 文件名只用 ASCII：GitHub Release 的附件名会丢掉非 ASCII 字符，
+          # 两个中文名会被同化成同一个文件，导致互相覆盖。
+          Copy-Item standalone/DesktopOrganizer.exe out/DesktopOrganizer-standalone.exe
+          Copy-Item slim/DesktopOrganizer.exe       out/DesktopOrganizer-slim.exe
           Get-ChildItem out | ForEach-Object { Write-Host "$($_.Name)  $([math]::Round($_.Length/1MB,2)) MB" }
 
       - name: 打标签并创建 Release
         uses: softprops/action-gh-release@v2
         with:
-          # 标签推送时取标签名，手动触发时取填的版本号
-          # （注意：workflow_dispatch 时 github.ref_name 是分支名，不能直接拿来当标签）
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
-          name: 桌面分区管家 ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: 桌面分区管家 ${{ steps.vars.outputs.tag }}
           prerelease: ${{ inputs.prerelease }}
           body: |
-            ## 桌面分区管家 ${{ inputs.tag }}
+            ## 桌面分区管家 ${{ steps.vars.outputs.tag }}
 
             在 Windows 桌面上划分分区框，把文件拖进去即可自动归类。
 
@@ -97,8 +107,8 @@ jobs:
 
             | 文件 | 体积 | 说明 |
             | --- | --- | --- |
-            | `DesktopOrganizer-独立版.exe` | 约 63 MB | **推荐**。双击即用，不需要安装 .NET 运行时 |
-            | `DesktopOrganizer-精简版.exe` | 约 0.4 MB | 需要本机已装 .NET 8 桌面运行时 |
+            | `DesktopOrganizer-standalone.exe` | 约 63 MB | **推荐**。双击即用，不需要安装 .NET 运行时 |
+            | `DesktopOrganizer-slim.exe` | 约 0.4 MB | 需要本机已装 .NET 8 桌面运行时 |
 
             下载后双击运行，程序会驻留在系统托盘，默认快捷键 `Ctrl+Alt+D` 显示/隐藏全部分区。
 
@@ -106,8 +116,8 @@ jobs:
             拖进分区 = 文件被真实移动到 `%USERPROFILE%\DesktopZones\<分区名>\`，不是快捷方式。
             删除文件走系统回收站，删分区不会删除里面的文件。
           files: |
-            out/DesktopOrganizer-独立版.exe
-            out/DesktopOrganizer-精简版.exe
+            out/DesktopOrganizer-standalone.exe
+            out/DesktopOrganizer-slim.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
