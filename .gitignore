@@ -35,3 +35,6 @@ src/DesktopOrganizer/Assets/app.ico
 ## 本地日志
 *.log
 !.github/
+
+## WorkBuddy 本地会话数据（不进仓库）
+.workbuddy/
