@@ -86,7 +86,7 @@ jobs:
           # 标签推送时取标签名，手动触发时取填的版本号
           # （注意：workflow_dispatch 时 github.ref_name 是分支名，不能直接拿来当标签）
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
-          name: 桌面分区管家 ${{ inputs.tag }}
+          name: 桌面分区管家 ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
           prerelease: ${{ inputs.prerelease }}
           body: |
             ## 桌面分区管家 ${{ inputs.tag }}
@@ -110,3 +110,22 @@ jobs:
             out/DesktopOrganizer-精简版.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 仅当上面的发布失败时才执行，把关键诊断信息打到运行日志里，
+      # 用于区分「令牌权限不足」和「文件路径不对」两类问题。
+      - name: 诊断失败原因
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          Write-Host "=== ref 信息 ==="
+          Write-Host "ref=${{ github.ref }}"
+          Write-Host "ref_type=${{ github.ref_type }}"
+          Write-Host "ref_name=${{ github.ref_name }}"
+          Write-Host "=== 待发布文件 ==="
+          Get-ChildItem out -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "$($_.Name) $($_.Length) bytes" }
+          Write-Host "=== 当前令牌对该仓库的权限 ==="
+          gh api repos/${{ github.repository }} --jq '.permissions'
+          Write-Host "=== Actions 工作流权限设置 ==="
+          gh api repos/${{ github.repository }}/actions/permissions/workflow

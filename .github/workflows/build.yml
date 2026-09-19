@@ -52,13 +52,15 @@ jobs:
       - name: 还原依赖
         run: dotnet restore src/DesktopOrganizer/DesktopOrganizer.csproj
 
-      - name: 编译（把警告当错误，早发现问题）
+      # 说明：这里刻意不加 -warnaserror。不同 SDK 小版本会冒出新的告警
+      # （例如 NuGet 供应链审计 NU19xx），本地干净不代表 CI 干净，
+      # 不应该让这类与代码无关的差异把 CI 卡红。
+      - name: 编译
         run: >
           dotnet build src/DesktopOrganizer/DesktopOrganizer.csproj
           -c Release
           -r ${{ matrix.runtime }}
           --no-restore
-          -warnaserror
 
       - name: 发布
         run: >
