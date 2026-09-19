@@ -1,0 +1,120 @@
+<Window x:Class="DesktopOrganizer.Windows.ZoneEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="分区设置"
+        Width="440"
+        SizeToContent="Height"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+    <Border Background="#FA1B1E25"
+            BorderBrush="#333A47"
+            BorderThickness="1"
+            CornerRadius="12"
+            Margin="14">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="26" ShadowDepth="4" Opacity="0.5" Color="#000000" />
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="46" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏 -->
+            <Border Grid.Row="0"
+                    Background="Transparent"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="18,0,10,0">
+                    <TextBlock x:Name="HeaderText"
+                               Text="分区设置"
+                               FontSize="13.5"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimary}"
+                               VerticalAlignment="Center" />
+                    <Button x:Name="BtnClose"
+                            Style="{StaticResource HeaderCloseButton}"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Click="Cancel_Click">
+                        <Path Data="M 0,0 L 9,9 M 9,0 L 0,9"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                              StrokeThickness="1.5"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              Width="9" Height="9"
+                              Stretch="Uniform" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- 表单 -->
+            <StackPanel Grid.Row="1" Margin="20,4,20,0">
+
+                <TextBlock Text="分区名称" Style="{StaticResource SectionTitle}" />
+                <TextBox x:Name="NameBox"
+                         Style="{StaticResource FieldTextBox}"
+                         MaxLength="40"
+                         TextChanged="OnInputChanged" />
+
+                <TextBlock Text="对应文件夹" Style="{StaticResource SectionTitle}" Margin="0,18,0,7" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="FolderBox"
+                             Grid.Column="0"
+                             Style="{StaticResource FieldTextBox}"
+                             TextChanged="OnInputChanged" />
+                    <Button x:Name="BtnBrowse"
+                            Grid.Column="1"
+                            Content="浏览…"
+                            Style="{StaticResource GhostButton}"
+                            MinWidth="72"
+                            Margin="8,0,0,0"
+                            Click="Browse_Click" />
+                </Grid>
+
+                <TextBlock x:Name="FolderHint"
+                           Style="{StaticResource HintText}"
+                           Margin="0,7,0,0"
+                           Text="拖进分区的文件会被真实移动到上面这个文件夹里，不会复制到别处。" />
+
+                <TextBlock x:Name="WarningText"
+                           Style="{StaticResource HintText}"
+                           Margin="0,7,0,0"
+                           Foreground="#F5A623"
+                           Visibility="Collapsed" />
+
+                <TextBlock Text="强调色" Style="{StaticResource SectionTitle}" Margin="0,18,0,7" />
+                <StackPanel x:Name="SwatchHost" Orientation="Horizontal" />
+
+            </StackPanel>
+
+            <!-- 底部按钮 -->
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="20,22,20,18">
+                <Button Content="取消"
+                        Style="{StaticResource GhostButton}"
+                        Margin="0,0,10,0"
+                        Click="Cancel_Click" />
+                <Button x:Name="BtnConfirm"
+                        Content="确定"
+                        Style="{StaticResource PrimaryButton}"
+                        Click="Confirm_Click" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

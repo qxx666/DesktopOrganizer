@@ -1,0 +1,88 @@
+name: 构建 Windows 程序
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # win-x64 覆盖绝大多数机器；self-contained 版本方便拷到没装 .NET 的电脑上
+        include:
+          - runtime: win-x64
+            self_contained: false
+            artifact: DesktopOrganizer-win-x64
+          - runtime: win-x64
+            self_contained: true
+            artifact: DesktopOrganizer-win-x64-standalone
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 还原应用图标
+        shell: pwsh
+        run: |
+          $ico = "src/DesktopOrganizer/Assets/app.ico"
+          $b64 = "tools/app-icon.b64.txt"
+          if (Test-Path $b64) {
+            New-Item -ItemType Directory -Force -Path (Split-Path $ico -Parent) | Out-Null
+            $bytes = [System.Convert]::FromBase64String(((Get-Content $b64 -Raw) -replace '\s', ''))
+            [System.IO.File]::WriteAllBytes($ico, $bytes)
+            Write-Host "已还原 $ico"
+          }
+
+      - name: 还原依赖
+        run: dotnet restore src/DesktopOrganizer/DesktopOrganizer.csproj
+
+      - name: 编译（把警告当错误，早发现问题）
+        run: >
+          dotnet build src/DesktopOrganizer/DesktopOrganizer.csproj
+          -c Release
+          -r ${{ matrix.runtime }}
+          --no-restore
+          -warnaserror
+
+      - name: 发布
+        run: >
+          dotnet publish src/DesktopOrganizer/DesktopOrganizer.csproj
+          -c Release
+          -r ${{ matrix.runtime }}
+          --self-contained ${{ matrix.self_contained }}
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=${{ matrix.self_contained }}
+          -p:EnableCompressionInSingleFile=${{ matrix.self_contained }}
+          -p:DebugType=embedded
+          --nologo
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: src/DesktopOrganizer/bin/Release/net8.0-windows/${{ matrix.runtime }}/publish/DesktopOrganizer.exe
+          if-no-files-found: error
+
+      - name: 打标签时附带发布说明
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: src/DesktopOrganizer/bin/Release/net8.0-windows/${{ matrix.runtime }}/publish/DesktopOrganizer.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,102 @@
+name: 发布 Release
+
+# 用法：GitHub 仓库页面 → Actions → 选「发布 Release」→ Run workflow → 填版本号（如 v1.0.0）
+# 会自动构建两个版本、打标签、并把 exe 挂到 Release 上供下载。
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '版本标签，例如 v1.0.0'
+        required: true
+        default: 'v1.0.0'
+      prerelease:
+        description: '标记为预发布版本'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 还原应用图标
+        shell: pwsh
+        run: |
+          $ico = "src/DesktopOrganizer/Assets/app.ico"
+          $b64 = "tools/app-icon.b64.txt"
+          if (Test-Path $b64) {
+            New-Item -ItemType Directory -Force -Path (Split-Path $ico -Parent) | Out-Null
+            $bytes = [System.Convert]::FromBase64String(((Get-Content $b64 -Raw) -replace '\s', ''))
+            [System.IO.File]::WriteAllBytes($ico, $bytes)
+            Write-Host "已还原 $ico"
+          }
+
+      - name: 构建独立版（免 .NET 运行时，约 63 MB）
+        run: >
+          dotnet publish src/DesktopOrganizer/DesktopOrganizer.csproj
+          -c Release -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -o standalone
+          --nologo
+
+      - name: 构建精简版（需 .NET 8 运行时，约 0.4 MB）
+        run: >
+          dotnet publish src/DesktopOrganizer/DesktopOrganizer.csproj
+          -c Release -r win-x64
+          --self-contained false
+          -p:PublishSingleFile=true
+          -o slim
+          --nologo
+
+      - name: 整理待发布文件
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          Copy-Item standalone/DesktopOrganizer.exe out/DesktopOrganizer-独立版.exe
+          Copy-Item slim/DesktopOrganizer.exe       out/DesktopOrganizer-精简版.exe
+          Get-ChildItem out | ForEach-Object { Write-Host "$($_.Name)  $([math]::Round($_.Length/1MB,2)) MB" }
+
+      - name: 打标签并创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: 桌面分区管家 ${{ inputs.tag }}
+          prerelease: ${{ inputs.prerelease }}
+          body: |
+            ## 桌面分区管家 ${{ inputs.tag }}
+
+            在 Windows 桌面上划分分区框，把文件拖进去即可自动归类。
+
+            ### 下载哪个？
+
+            | 文件 | 体积 | 说明 |
+            | --- | --- | --- |
+            | `DesktopOrganizer-独立版.exe` | 约 63 MB | **推荐**。双击即用，不需要安装 .NET 运行时 |
+            | `DesktopOrganizer-精简版.exe` | 约 0.4 MB | 需要本机已装 .NET 8 桌面运行时 |
+
+            下载后双击运行，程序会驻留在系统托盘，默认快捷键 `Ctrl+Alt+D` 显示/隐藏全部分区。
+
+            ### 注意
+            拖进分区 = 文件被真实移动到 `%USERPROFILE%\DesktopZones\<分区名>\`，不是快捷方式。
+            删除文件走系统回收站，删分区不会删除里面的文件。
+          files: |
+            out/DesktopOrganizer-独立版.exe
+            out/DesktopOrganizer-精简版.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

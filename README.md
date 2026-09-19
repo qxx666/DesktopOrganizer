@@ -1,0 +1,116 @@
+# 桌面分区管家（DesktopOrganizer）
+
+在 Windows 桌面上划分若干「分区框」，把文件拖进不同分区 —— 文件会**真实移动**到该分区绑定的文件夹里。桌面保持干净，文件也不会丢。
+
+- 技术栈：C# / WPF（.NET 8），原生 Windows 程序
+- 体积：独立版约 63 MB 单文件 exe（免安装 .NET 运行时）；精简版约 0.4 MB
+- 配置存放：`%APPDATA%\DesktopOrganizer\config.json`
+- 分区文件夹默认根目录：`%USERPROFILE%\DesktopZones`（可在设置里改）
+
+---
+
+## 一、怎么用
+
+### 构建并运行
+
+> 如果项目里已经有 `dist/DesktopOrganizer-独立版.exe`，直接把它拷到 Windows 电脑上双击即可，不用装任何东西，也不用手敲下面的命令。
+
+在你的 Windows 机器上（需装 [.NET 8 SDK](https://dotnet.microsoft.com/download)，或 `winget install Microsoft.DotNet.SDK.8`）：
+
+```powershell
+# 独立版（推荐）：产物是单个 exe，拷到任何 Windows 电脑双击即用
+.\build.ps1
+
+# 精简版：只有 0.4 MB，但目标机器必须已装 .NET 8 桌面运行时
+.\build.ps1 -Slim
+
+# 只编译不发布
+.\build.ps1 -SkipPublish
+```
+
+构建完成后脚本会自动打开输出目录，双击 `DesktopOrganizer.exe` 即可。程序启动后**只在托盘显示图标**，不占任务栏。
+
+不想自己编译？把仓库推到 GitHub：
+
+- **`.github/workflows/build.yml`** —— 每次 push 自动构建，产物在 Actions 页面下载
+- **`.github/workflows/release.yml`** —— 在仓库的 Actions 页面选「发布 Release」→ `Run workflow` → 填版本号（如 `v1.0.0`），会自动构建两个版本、打标签、并把 exe 挂到 Release 上，可直接分享给别人下载
+
+### 日常操作
+
+| 操作 | 方法 |
+| --- | --- |
+| 新建分区 | 托盘图标右键 →「新建分区…」 |
+| 把文件放进分区 | 从桌面 / 资源管理器把文件**拖到**分区框里 |
+| 把文件取出来 | 从分区框把文件**拖回**桌面或别的文件夹 |
+| 移动 / 缩放分区 | 拖动分区标题栏移动；拖动右下角缩放 |
+| 折叠成一个标题条 | 点标题栏右侧的折叠按钮 |
+| 全部隐藏 / 显示 | 快捷键 `Ctrl+Alt+D`，或双击托盘图标 |
+| 打开分区对应的文件夹 | 分区标题栏右键 →「打开分区文件夹」 |
+| 改分区名 / 颜色 / 文件夹 | 分区标题栏右键 →「分区设置…」 |
+
+**分区右键菜单**：打开分区文件夹 · 在资源管理器中显示 · 刷新 · 分区设置… · 新建分区… · 四种排序方式 + 升降序 · 锁定/解锁布局 · 折叠/展开 · 删除分区
+
+**文件右键菜单**：打开 · 在资源管理器中显示 · 重命名… · 复制完整路径 · 移动到回收站
+
+**托盘右键菜单**：显示/隐藏全部分区 · 新建分区… · 锁定布局 · 全局设置… · 打开分区文件夹根目录 · 退出
+
+### 设置项（托盘 → 全局设置…）
+
+分区文件夹根目录 · 开机自启 · 置顶显示 · 布局锁定 · 全局快捷键 · 图标大小 · 面板不透明度 · 明暗主题 · 拖动吸附 · 显示隐藏文件 · 默认排序方式
+
+---
+
+## 二、重要行为说明
+
+- **拖进去 = 真实移动文件**。文件从桌面移到 `%USERPROFILE%\DesktopZones\<分区名>\` 下，不是快捷方式，不是复制。
+- **拖出去 = 真实移回来**。从分区拖到桌面，文件就回到桌面了。
+- **删除分区不会删文件**。删分区只是删掉这个框，里面的文件仍留在对应文件夹里。
+- **文件右键「移动到回收站」**走的是系统回收站，可以随时还原，不会直接永久删除。
+- **分区文件夹被手动删掉**时，分区框会显示「重新创建文件夹」按钮，点一下即可恢复，不会崩。
+- **同名不覆盖**：拖入时若目标文件夹已有同名文件，会自动改名成 `报告 (2).docx`、`报告 (3).docx`…… 原文件绝不会被覆盖。
+- **已经在分区里的文件**再拖一次会被跳过，不报错也不产生副本。
+
+---
+
+## 三、目录结构
+
+```
+DesktopOrganizer/
+├── build.ps1                    一键构建脚本
+├── DesktopOrganizer.sln
+├── tools/
+│   └── app-icon.b64.txt         应用图标的 base64 文本（构建时还原成 app.ico）
+├── .github/workflows/
+│   ├── build.yml                每次 push 自动编译
+│   └── release.yml              手动触发：打标签 + 发布 Release
+└── src/DesktopOrganizer/
+    ├── App.xaml(.cs)            应用入口 + 全局样式
+    ├── app.manifest             DPI 感知、长路径支持
+    ├── Models/
+    │   ├── AppConfig.cs         全局配置
+    │   ├── ZoneConfig.cs         单个分区配置 + 排序/外观枚举
+    │   └── FileItemViewModel.cs  分区内文件项的显示模型
+    ├── Services/
+    │   ├── ConfigService.cs      配置读写（JSON）
+    │   ├── ZoneManager.cs        分区生命周期总管
+    │   ├── ZoneFolderService.cs  真实文件移动 / 打开 / 回收站
+    │   ├── ShellIconService.cs   调用系统 Shell 提取真实文件图标
+    │   ├── HotkeyService.cs      全局热键
+    │   ├── AutostartService.cs   开机自启（写注册表 Run 项）
+    │   ├── TrayService.cs        托盘图标与菜单
+    │   ├── DragDropContext.cs    跨分区拖拽状态
+    │   └── NativeMethods.cs      Win32 P/Invoke
+    └── Windows/
+        ├── ZoneWindow.xaml(.cs)        分区主窗口
+        ├── ZoneEditorWindow.xaml(.cs)  分区设置
+        ├── SettingsWindow.xaml(.cs)    全局设置
+        └── TextPromptWindow.xaml(.cs)  重命名输入框
+```
+
+---
+
+## 四、已知限制
+
+- 分区是**悬浮在桌面图标之上**的窗口（当前选定方案）。它没有像 Fences 那样嵌入到桌面图标下层，所以桌面系统图标被分区遮住时，需要按 `Ctrl+Alt+D` 隐藏分区才能点到。
+- 「锁定布局」只锁拖动 / 缩放 / 删除，不锁文件的拖入拖出。
+- 全局热键若与其他软件冲突会注册失败，此时改一个组合即可（设置里修改后立即生效）。
