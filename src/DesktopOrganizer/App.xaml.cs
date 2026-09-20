@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -56,7 +57,10 @@ public partial class App : Application
 
         if (selfTest)
         {
+            // 结果同时写到 CI 指定的路径：日志目录未必可读，指定的路径一定可读。
+            _selfTestOut = SelfTestOutputPath(e.Args);
             var failures = RunSelfTest();
+            FlushSelfTest();
             // 用 Environment.Exit 而不是 Shutdown：在 OnStartup 里调 Shutdown
             // 退出码未必能带出去，而 CI 全靠这个码判断成败。
             Environment.Exit(failures == 0 ? 0 : 1);
@@ -315,6 +319,45 @@ public partial class App : Application
                (ReferenceEquals(root, ex) ? string.Empty : $"\n（外层：{ex.GetType().Name}）");
     }
 
+    private static string? _selfTestOut;
+    private static readonly List<string> SelfTestLines = new();
+
+    /// <summary>取出 --out 指定的自检输出路径。</summary>
+    private static string? SelfTestOutputPath(string[] args)
+    {
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i].StartsWith("--out=", StringComparison.OrdinalIgnoreCase))
+            {
+                return args[i].Substring("--out=".Length).Trim('"');
+            }
+
+            if (args[i].Equals("--out", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                return args[i + 1].Trim('"');
+            }
+        }
+
+        return null;
+    }
+
+    private static void FlushSelfTest()
+    {
+        if (string.IsNullOrWhiteSpace(_selfTestOut))
+        {
+            return;
+        }
+
+        try
+        {
+            System.IO.File.WriteAllText(_selfTestOut, string.Join(Environment.NewLine, SelfTestLines));
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
     /// <summary>
     /// 冒烟自检：把「编译期完全看不出来、只在真机运行时才炸」的路径各跑一遍。
     /// 返回失败项数量；CI 用退出码判断结果。
@@ -328,22 +371,28 @@ public partial class App : Application
             try
             {
                 action();
-                LogLine("  [通过] " + name);
+                Say("  [通过] " + name);
             }
             catch (Exception ex)
             {
                 failures++;
-                LogLine($"  [失败] {name} —— {ex.GetType().Name}: {ex.Message}");
+                Say($"  [失败] {name} —— {ex.GetType().Name}: {ex.Message}");
                 LogFatal(ex, "自检：" + name);
             }
         }
 
-        LogLine("=== 自检开始 ===");
+        void Say(string line)
+        {
+            SelfTestLines.Add(line);
+            LogLine(line);
+        }
+
+        Say("=== 自检开始 ===");
 
         Check("区域性与语言标记", () =>
         {
             var culture = System.Globalization.CultureInfo.CurrentUICulture;
-            LogLine($"      区域={culture.Name}，显示名={culture.DisplayName}");
+            Say($"      区域={culture.Name}，显示名={culture.DisplayName}");
             if (string.IsNullOrEmpty(culture.Name))
             {
                 throw new InvalidOperationException(
@@ -418,7 +467,7 @@ public partial class App : Application
             nameBrush: System.Windows.Media.Brushes.White,
             fullItemName: true, nameMaxLines: 3, widthMode: 1));
 
-        LogLine($"=== 自检结束，失败 {failures} 项 ===");
+        Say($"=== 自检结束，失败 {failures} 项 ===");
         return failures;
     }
 

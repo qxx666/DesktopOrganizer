@@ -85,11 +85,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $exe = "src/DesktopOrganizer/bin/Release/net8.0-windows/${{ matrix.runtime }}/publish/DesktopOrganizer.exe"
-          & $exe --selftest
-          $code = $LASTEXITCODE
+          if (-not (Test-Path $exe)) { Write-Host "找不到产物：$exe"; exit 1 }
 
-          $logFile = "$env:APPDATA\DesktopOrganizer\error.log"
-          $text = if (Test-Path $logFile) { Get-Content $logFile -Raw } else { "(程序没有写出日志)" }
+          $out = "selftest-${{ matrix.artifact }}.txt"
+          $p = Start-Process -FilePath $exe -ArgumentList @("--selftest","--out=$out") -Wait -PassThru -NoNewWindow
+          $code = $p.ExitCode
+
+          $text = if (Test-Path $out) { Get-Content $out -Raw } else { "(程序没有产生任何输出 —— 多半是没能启动起来)" }
           $text += "`n退出码：$code`n"
 
           Write-Host "----- 自检日志 -----"
