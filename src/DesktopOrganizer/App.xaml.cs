@@ -57,7 +57,9 @@ public partial class App : Application
         if (selfTest)
         {
             var failures = RunSelfTest();
-            Shutdown(failures == 0 ? 0 : 1);
+            // 用 Environment.Exit 而不是 Shutdown：在 OnStartup 里调 Shutdown
+            // 退出码未必能带出去，而 CI 全靠这个码判断成败。
+            Environment.Exit(failures == 0 ? 0 : 1);
             return;
         }
 
