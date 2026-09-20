@@ -76,6 +76,19 @@ jobs:
           -p:DebugType=embedded
           --nologo
 
+      # 真把程序跑起来做冒烟自检。很多问题（区域性、WPF 文本排版、Shell 图标）
+      # 编译期完全看不出来，只在真机运行时才炸，光能编译通过靠不住。
+      - name: 冒烟自检
+        shell: pwsh
+        run: |
+          $exe = "src/DesktopOrganizer/bin/Release/net8.0-windows/${{ matrix.runtime }}/publish/DesktopOrganizer.exe"
+          & $exe --selftest
+          $code = $LASTEXITCODE
+          $log = "$env:APPDATA\DesktopOrganizer\error.log"
+          if (Test-Path $log) { Get-Content $log | Write-Host }
+          Write-Host "退出码：$code"
+          if ($code -ne 0) { exit 1 }
+
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:

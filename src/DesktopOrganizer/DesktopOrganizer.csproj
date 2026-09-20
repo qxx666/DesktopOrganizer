@@ -38,10 +38,12 @@
        以下几项都是「牺牲一点点的通用性 / 停顿，换更低的常驻内存」。 -->
 
   <PropertyGroup>
-    <!-- 不需要 ICU 全球化数据：排序一律用 StringComparer.Ordinal（与文化无关），
-         日期格式也是固定写法的 yyyy-MM-dd，不依赖区域设置。
-         关掉后不必加载 icu.dll，体积和常驻内存都能省下一大块。 -->
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- 这里曾经开过 InvariantGlobalization（省几十 MB 的 ICU 数据），但实测在真机上会让
+         界面文本渲染直接崩掉：关掉区域性数据后 CultureInfo.CurrentUICulture 退化成「不变
+         文化」，语言标记变成空字符串，而 WPF 的 FormattedText / TextBlock 排版依赖这个
+         标记做字体回退与数字替换。编译时完全看不出来，只在运行时渲染文本时才炸。
+         省下来的那点内存远不值得冒这个险，因此显式关掉，别再打开。 -->
+    <InvariantGlobalization>false</InvariantGlobalization>
 
     <!-- 后台（并发）GC 需要额外的工作集来做并发标记。托盘程序对 GC 停顿无感知，
          关掉它换更低的常驻内存。 -->

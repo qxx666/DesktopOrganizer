@@ -209,9 +209,17 @@ public sealed class FileItemViewModel
 
         try
         {
+            // 不变文化（Name 为空）会让 WPF 的字体回退与数字替换拿不到语言标记，
+            // 这时退回一个确定的具体区域性，别把空标记传给排版引擎。
+            var culture = CultureInfo.CurrentUICulture;
+            if (string.IsNullOrEmpty(culture.Name))
+            {
+                culture = CultureInfo.GetCultureInfo("en-US");
+            }
+
             var formatted = new FormattedText(
                 text,
-                CultureInfo.CurrentUICulture,
+                culture,
                 FlowDirection.LeftToRight,
                 new Typeface(
                     new FontFamily(NameFontFamily),
