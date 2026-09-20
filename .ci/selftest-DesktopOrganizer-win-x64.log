@@ -1,6 +1,6 @@
 === 自检开始 ===
-      区域=en-US，显示名=English (United States)
-  [通过] 区域性与语言标记
+      区域=，显示名=Invariant Language (Invariant Country)
+  [失败] 区域性与语言标记 —— InvalidOperationException: 语言标记为空（多半是开了 InvariantGlobalization），WPF 文本排版会拿不到字体回退信息
   [通过] WPF 文本排版（FormattedText）
   [通过] WPF 文本块布局（TextBlock 测量）
   [通过] 配置读写
@@ -8,5 +8,5 @@
   [通过] Shell 图标提取
   [通过] 托盘图标
   [通过] 文件列表加载
-=== 自检结束，失败 0 项 ===
-退出码：0
+=== 自检结束，失败 1 项 ===
+退出码：1
