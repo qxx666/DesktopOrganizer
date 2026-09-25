@@ -82,6 +82,21 @@ jobs:
             echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
           fi
 
+      # 版本号一致性闸门：csproj 里的 <Version> 必须与标签一致。
+      # 曾经发生过「标签已到 v1.1.2、exe 属性还是 1.0.0」的漂移，
+      # 用户右键 exe 看属性会分不清版本。这里强制同步。
+      - name: 校验程序集版本与标签一致
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.vars.outputs.tag }}" -replace '^v', ''
+          $csproj = [xml](Get-Content src/DesktopOrganizer/DesktopOrganizer.csproj -Raw)
+          $assembly = $csproj.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          Write-Host "标签版本：$tag；程序集版本：$assembly"
+          if ($assembly -ne $tag) {
+            Write-Host "::error::csproj 里的 <Version> 是 $assembly，与标签 v$tag 不一致。请先更新 src/DesktopOrganizer/DesktopOrganizer.csproj 再打标签。"
+            exit 1
+          }
+
       - name: 整理待发布文件
         shell: pwsh
         run: |

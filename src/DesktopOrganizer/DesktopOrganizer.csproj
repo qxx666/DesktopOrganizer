@@ -19,9 +19,9 @@
     <RootNamespace>DesktopOrganizer</RootNamespace>
     <AssemblyTitle>桌面分区管家</AssemblyTitle>
     <Product>DesktopOrganizer</Product>
-    <Version>1.0.0</Version>
-    <FileVersion>1.0.0.0</FileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <Version>1.1.2</Version>
+    <FileVersion>1.1.2.0</FileVersion>
+    <AssemblyVersion>1.1.2.0</AssemblyVersion>
     <Copyright>Copyright © 2026</Copyright>
 
     <!-- 图标由 tools/app-icon.b64.txt 还原而来；万一缺失也不阻断构建 -->
