@@ -32,8 +32,16 @@
 
 不想自己编译？把仓库推到 GitHub：
 
-- **`.github/workflows/build.yml`** —— 每次 push 自动构建，产物在 Actions 页面下载
-- **`.github/workflows/release.yml`** —— 在仓库的 Actions 页面选「发布 Release」→ `Run workflow` → 填版本号（如 `v1.0.0`），会自动构建两个版本、打标签、并把 exe 挂到 Release 上，可直接分享给别人下载
+- **`.github/workflows/build.yml`** —— 每次 push 自动构建（含真机冒烟自检），产物在 Actions 页面下载
+- **`.github/workflows/release.yml`** —— 推荐直接**推标签**触发：`git tag -a v1.1.2 && git push origin v1.1.2`；
+  也可以在 Actions 页面选「发布 Release」→ `Run workflow` → 填版本号。
+  两种方式都会自动构建两个版本、把 exe 挂到 Release 上，可直接分享给别人下载。
+
+> **发版前记得同步版本号**：`src/DesktopOrganizer/DesktopOrganizer.csproj` 里的
+> `<Version>` / `<FileVersion>` / `<AssemblyVersion>` 必须与标签一致
+> （例如标签 `v1.1.2` → 三个值分别写成 `1.1.2` / `1.1.2.0` / `1.1.2.0`）。
+> 发布流程内置了一致性校验，不一致会直接失败并提示，不会出现「标签到了 v1.1.2、
+> exe 属性还显示 1.0.0」这种漂移。
 
 ### 日常操作
 
