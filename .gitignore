@@ -38,3 +38,6 @@ src/DesktopOrganizer/Assets/app.ico
 
 ## WorkBuddy 本地会话数据（不进仓库）
 .workbuddy/
+
+## CI 自检日志（只在自检失败时由 Actions 写回，不进仓库）
+.ci/

@@ -43,7 +43,7 @@
          文化」，语言标记变成空字符串，而 WPF 的 FormattedText / TextBlock 排版依赖这个
          标记做字体回退与数字替换。编译时完全看不出来，只在运行时渲染文本时才炸。
          省下来的那点内存远不值得冒这个险，因此显式关掉，别再打开。 -->
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <InvariantGlobalization>false</InvariantGlobalization>
 
     <!-- 后台（并发）GC 需要额外的工作集来做并发标记。托盘程序对 GC 停顿无感知，
          关掉它换更低的常驻内存。 -->

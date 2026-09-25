@@ -98,12 +98,15 @@ jobs:
           Write-Host $text
           Write-Host "-------------------"
 
-          # 把结果写回仓库，省得每次都得登到 Actions 页面翻日志
+          if ($code -eq 0) { Write-Host "自检全部通过"; exit 0 }
+
+          # 只在失败时把详情写回仓库：Action 日志要管理员权限才拿得到，
+          # 写回文件后直接看仓库里的 .ci/ 即可，不用登到 Actions 页面翻。
           $target = ".ci/selftest-${{ matrix.artifact }}.log"
           $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($text))
           $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = "application/vnd.github+json"; "User-Agent" = "ci" }
           $api = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/contents/$target"
-          $body = @{ message = "CI 自检日志（${{ matrix.artifact }}）"; content = $b64; branch = "main" }
+          $body = @{ message = "CI 自检失败详情（${{ matrix.artifact }}）"; content = $b64; branch = "main" }
           try {
             $old = Invoke-RestMethod -Headers $headers -Uri $api -ErrorAction Stop
             $body.sha = $old.sha
@@ -113,7 +116,7 @@ jobs:
               -Body ($body | ConvertTo-Json) -ContentType "application/json" | Out-Null
           } catch { Write-Host "写回日志失败（不影响构建结果）：$_" }
 
-          if ($code -ne 0) { exit 1 }
+          exit 1
 
       - name: 上传产物
         uses: actions/upload-artifact@v4

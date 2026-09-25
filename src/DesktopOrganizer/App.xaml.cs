@@ -434,6 +434,26 @@ public partial class App : Application
             }
         });
 
+        // CI 跑在英文区域，而真实用户多是中文环境，这里显式再验一次中文区域性，
+        // 免得区域性相关的坑只在中文机器上才冒出来。
+        Check("中文区域性与中文文本排版", () =>
+        {
+            var zh = System.Globalization.CultureInfo.GetCultureInfo("zh-CN");
+            var formatted = new FormattedText(
+                "中文文件名测试 abc",
+                zh,
+                FlowDirection.LeftToRight,
+                new Typeface(
+                    new System.Windows.Media.FontFamily("Microsoft YaHei UI, Segoe UI"),
+                    FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                11, System.Windows.Media.Brushes.Black, pixelsPerDip: 1.0);
+
+            if (formatted.Width <= 0)
+            {
+                throw new InvalidOperationException("中文测量宽度为 0");
+            }
+        });
+
         Check("配置读写", () =>
         {
             var config = ConfigService.Load();
