@@ -596,9 +596,25 @@ public partial class ZoneWindow : Window
 
     private void UpdateDragFeedback(DragEventArgs e)
     {
-        if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+        // 拖入目录时 Explorer 用「延迟渲染」，DragOver 阶段 GetDataPresent(FileDrop) 对目录
+        // 常返回 false，导致目录被当成不可放置而拒绝（文件是即时渲染的，所以文件能拖进来）。
+        // 改用 GetFormats 检查格式是否已通告——延迟渲染也会通告格式名，真正取数据放到 Drop 里做，
+        // 这样文件与目录都能拖进来。
+        var hasFileDrop = false;
+        try
+        {
+            hasFileDrop = e.Data.GetFormats().Any(f =>
+                string.Equals(f, DataFormats.FileDrop, StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            // 某些拖拽源取格式会抛 COM 异常，忽略即可，按不可放置处理
+        }
+
+        if (!hasFileDrop)
         {
             e.Effects = DragDropEffects.None;
+            SetDropHighlight(false);
             e.Handled = true;
             return;
         }
@@ -735,7 +751,22 @@ public partial class ZoneWindow : Window
             return;
         }
 
-        var data = new DataObject(DataFormats.FileDrop, new[] { item.FullPath });
+        var data = new DataObject();
+        data.SetData(DataFormats.FileDrop, new[] { item.FullPath });
+
+        // 来自第三方程序的 HDROP，资源管理器默认按「复制」处理（保留源文件），
+        // 表现就是「拖出一份副本、分区里原文件还在」。加上 PreferredDropEffect=Move，
+        // 让资源管理器默认执行移动——拖出即从分区移除。用户按住 Ctrl 仍可复制。
+        try
+        {
+            data.SetData(
+                "PreferredDropEffect",
+                new MemoryStream(BitConverter.GetBytes((int)DragDropEffects.Move)));
+        }
+        catch
+        {
+            // 写这个格式失败也不影响拖拽本身，只是默认变回复制
+        }
 
         DragDropContext.SourceZone = this;
 
@@ -752,7 +783,9 @@ public partial class ZoneWindow : Window
             DragDropContext.Reset();
         }
 
-        // 文件被拖到别处（桌面 / 其它分区 / 资源管理器）之后刷新自己
+        // 文件被拖到别处（桌面 / 其它分区 / 资源管理器）之后刷新自己。
+        // 移动还是复制由落点决定：资源管理器会真正搬运文件（移动时源文件被移除），
+        // 另一个分区则走 MoveInto 把文件从本分区搬走。这里只负责刷新现实状态。
         RefreshItems();
     }
 
