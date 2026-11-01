@@ -541,6 +541,18 @@ public partial class App : Application
             nameBrush: System.Windows.Media.Brushes.White,
             fullItemName: true, nameMaxLines: 3, widthMode: 1));
 
+        // 回归守卫：名称排序必须按数值比较，不能让 "10、xx" 排到 "2、xx" 前面。
+        Check("名称自然排序（数字编号不乱序）", () =>
+        {
+            var c = DesktopOrganizer.Models.NaturalNameComparer.Instance;
+            if (c.Compare("1、xx", "2、xx") >= 0)
+                throw new InvalidOperationException("1 应排在 2 之前");
+            if (c.Compare("2、xx", "10、xx") >= 0)
+                throw new InvalidOperationException("2 应排在 10 之前");
+            if (c.Compare("10、xx", "2、xx") >= 0)
+                throw new InvalidOperationException("10 应排在 2 之后（字典序会错）");
+        });
+
         Say($"=== 自检结束，失败 {failures} 项 ===");
         return failures;
     }

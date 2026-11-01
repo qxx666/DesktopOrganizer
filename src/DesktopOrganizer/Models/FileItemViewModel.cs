@@ -268,13 +268,14 @@ public sealed class FileItemViewModel
 
             ZoneSortMode.Type => descending
                 ? source.OrderByDescending(i => Path.GetExtension(i.FullPath), StringComparer.OrdinalIgnoreCase)
-                        .ThenByDescending(i => i.DisplayName, StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(i => i.DisplayName, NaturalNameComparer.Instance)
                 : source.OrderBy(i => Path.GetExtension(i.FullPath), StringComparer.OrdinalIgnoreCase)
-                        .ThenBy(i => i.DisplayName, StringComparer.OrdinalIgnoreCase),
+                        .ThenBy(i => i.DisplayName, NaturalNameComparer.Instance),
 
+            // 名称排序用自然排序：数字段按数值比较（"2" < "10"），而不是字典序
             _ => descending
-                ? source.OrderByDescending(i => i.DisplayName, StringComparer.OrdinalIgnoreCase)
-                : source.OrderBy(i => i.DisplayName, StringComparer.OrdinalIgnoreCase),
+                ? source.OrderByDescending(i => i.DisplayName, NaturalNameComparer.Instance)
+                : source.OrderBy(i => i.DisplayName, NaturalNameComparer.Instance),
         };
     }
 }
