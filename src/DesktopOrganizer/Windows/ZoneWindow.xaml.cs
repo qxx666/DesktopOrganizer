@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using System.Windows.Interop;
@@ -190,17 +191,13 @@ public partial class ZoneWindow : Window
         RefreshItems();
     }
 
-    /// <summary>按 FrameFaint 把外框刷成极淡的高光描边（薄白边，不再是饱和强调色厚边）。</summary>
+    /// <summary>分区框采用无边框玻璃卡片风格：常态不画任何边框线，仅靠圆角+阴影区分层次。</summary>
     private void RestoreFrameBorder()
     {
-        var faint = Math.Clamp(_zone.FrameFaint, 0, 100);
-        var dark = ZoneManager.Instance.Config.Appearance == ZoneAppearance.Dark;
-        // 浅色用近白、深色用浅灰，只做一缕边缘高光，不抢戏（参考图风格）
-        var rimColor = dark ? Color.FromRgb(0xD2, 0xD8, 0xE2) : Color.FromRgb(0xFF, 0xFF, 0xFF);
-        var rimAlpha = faint <= 0 ? 0 : (0.20 + (faint / 100.0) * 0.40); // 0.20 ~ 0.60
-
-        RootPanel.BorderBrush = new SolidColorBrush(WithAlpha(rimColor, rimAlpha));
-        RootPanel.BorderThickness = new Thickness(faint <= 0 ? 0 : 1);
+        // 不再渲染外框线条（线条已按需求去除）。边框厚度恒为 0，画笔透明，
+        // 避免拖放/成功反馈残留后恢复时重新出现线条。
+        RootPanel.BorderBrush = Brushes.Transparent;
+        RootPanel.BorderThickness = new Thickness(0);
     }
 
     public void ApplyTopmost()
@@ -714,30 +711,50 @@ public partial class ZoneWindow : Window
     {
         var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
 
-        // 拖入时边框高亮为强调色实线；移开时恢复淡化高光线
-        RootPanel.BorderBrush = active
-            ? new SolidColorBrush(accent)
-            : new SolidColorBrush(WithAlpha(
-                accent, 0.04 + (Math.Clamp(_zone.FrameFaint, 0, 100) / 100.0) * 0.5));
+        // 无边框风格：拖入时用「强调色光晕阴影」代替边框线做高亮反馈
+        if (active)
+        {
+            PanelShadow.Color = accent;
+            PanelShadow.Opacity = 0.55;
+            PanelShadow.BlurRadius = 42;
+            PanelShadow.ShadowDepth = 8;
+        }
+        else
+        {
+            PanelShadow.Color = Colors.Black;
+            PanelShadow.Opacity = 0.30;
+            PanelShadow.BlurRadius = 32;
+            PanelShadow.ShadowDepth = 6;
+        }
     }
 
-    /// <summary>成功收纳文件后，边框闪一下表示完成。</summary>
+    /// <summary>成功收纳文件后，用一圈白色光晕闪烁代替边框线表示完成。</summary>
     private void FlashSuccess()
     {
         try
         {
-            var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
-            var brush = new SolidColorBrush(Colors.White);
-            RootPanel.BorderBrush = brush;
+            // 先亮一下白色光晕
+            PanelShadow.Color = Colors.White;
+            PanelShadow.Opacity = 0.85;
+            PanelShadow.BlurRadius = 48;
+            PanelShadow.ShadowDepth = 6;
 
-            // 闪光结束后回到淡化边框，而不是显眼的实色
-            var target = WithAlpha(accent, 0.04 + (Math.Clamp(_zone.FrameFaint, 0, 100) / 100.0) * 0.5);
-            var animation = new ColorAnimation(target, TimeSpan.FromMilliseconds(650))
+            var colorAnim = new ColorAnimation(Colors.Black, TimeSpan.FromMilliseconds(650))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            };
+            var opacityAnim = new DoubleAnimation(0.30, TimeSpan.FromMilliseconds(650))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            };
+            var blurAnim = new DoubleAnimation(32, TimeSpan.FromMilliseconds(650))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
             };
 
-            brush.BeginAnimation(SolidColorBrush.ColorProperty, animation);
+            PanelShadow.BeginAnimation(DropShadowEffect.ColorProperty, colorAnim);
+            PanelShadow.BeginAnimation(DropShadowEffect.OpacityProperty, opacityAnim);
+            PanelShadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, blurAnim);
         }
         catch
         {

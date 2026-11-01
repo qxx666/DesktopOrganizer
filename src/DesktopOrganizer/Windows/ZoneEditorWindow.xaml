@@ -130,20 +130,6 @@
                     </StackPanel>
                 </Grid>
 
-                <Grid Margin="0,8,0,2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="72" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="40" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="外框淡化" Style="{StaticResource HintText}" Grid.Column="0" VerticalAlignment="Center" />
-                    <Slider x:Name="FrameFaintSlider" Grid.Column="1" Minimum="0" Maximum="100"
-                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="6,0" Value="25"
-                            Foreground="{StaticResource TextPrimary}" ValueChanged="OnFrameFaintChanged" />
-                    <TextBlock x:Name="FrameFaintValue" Grid.Column="2" Style="{StaticResource HintText}"
-                               VerticalAlignment="Center" Text="25" />
-                </Grid>
-
             </StackPanel>
 
             <!-- 底部按钮 -->

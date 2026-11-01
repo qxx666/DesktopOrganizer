@@ -52,9 +52,8 @@
         <!-- ======================= 玻璃卡片 ======================= -->
         <Border x:Name="RootPanel"
                 CornerRadius="20"
-                BorderThickness="1"
+                BorderThickness="0"
                 Background="Transparent"
-                BorderBrush="#554C8DFF"
                 SnapsToDevicePixels="True">
             <Border.Effect>
                 <DropShadowEffect x:Name="PanelShadow"

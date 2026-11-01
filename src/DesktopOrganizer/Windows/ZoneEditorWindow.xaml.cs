@@ -62,8 +62,6 @@ public partial class ZoneEditorWindow : Window
             NameFontSizeValue.Text = ((int)existing.NameFontSize).ToString();
             AlignLeftRadio.IsChecked = existing.NameAlignment != ZoneNameAlignment.Center;
             AlignCenterRadio.IsChecked = existing.NameAlignment == ZoneNameAlignment.Center;
-            FrameFaintSlider.Value = existing.FrameFaint;
-            FrameFaintValue.Text = ((int)existing.FrameFaint).ToString();
         }
         else
         {
@@ -296,17 +294,6 @@ public partial class ZoneEditorWindow : Window
         Validate();
     }
 
-    private void OnFrameFaintChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (!_initialized || FrameFaintValue == null || FrameFaintSlider == null)
-        {
-            return;
-        }
-
-        FrameFaintValue.Text = ((int)FrameFaintSlider.Value).ToString();
-        Validate();
-    }
-
     private void OnAlignChanged(object sender, RoutedEventArgs e) => Validate();
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
@@ -332,7 +319,6 @@ public partial class ZoneEditorWindow : Window
             _existing.NameAlignment = AlignCenterRadio.IsChecked == true
                 ? ZoneNameAlignment.Center
                 : ZoneNameAlignment.Left;
-            _existing.FrameFaint = FrameFaintSlider.Value;
             Result = _existing;
         }
         else
@@ -347,7 +333,6 @@ public partial class ZoneEditorWindow : Window
                 NameAlignment = AlignCenterRadio.IsChecked == true
                     ? ZoneNameAlignment.Center
                     : ZoneNameAlignment.Left,
-                FrameFaint = FrameFaintSlider.Value,
             };
         }
 
