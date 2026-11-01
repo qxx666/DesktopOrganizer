@@ -16,6 +16,8 @@ public sealed class TrayService : IDisposable
     public event Action? NewZoneRequested;
     public event Action? SettingsRequested;
     public event Action? ToggleVisibilityRequested;
+    /// <summary>单击 / 双击托盘图标触发：只显示分区、绝不隐藏（除非退出程序）。</summary>
+    public event Action? ShowRequested;
     public event Action? LayoutLockToggled;
     public event Action? TopmostToggled;
     public event Action? OpenRootFolderRequested;
@@ -47,8 +49,11 @@ public sealed class TrayService : IDisposable
             ContextMenuStrip = menu,
         };
 
-        // 双击托盘图标 = 显示 / 隐藏
-        _notifyIcon.DoubleClick += (_, _) => ToggleVisibilityRequested?.Invoke();
+        // 单击 / 双击托盘图标都只负责「显示分区」，绝不隐藏（隐藏只发生在用户从菜单
+        // 主动选择，或按热键，或退出程序时）。WinForms 的 NotifyIcon 在双击时也会先触发一次
+        // Click，所以两者都指向 ShowRequested，幂等、不会误隐藏。
+        _notifyIcon.Click += (_, _) => ShowRequested?.Invoke();
+        _notifyIcon.DoubleClick += (_, _) => ShowRequested?.Invoke();
 
         SyncMenuState();
     }
@@ -64,7 +69,7 @@ public sealed class TrayService : IDisposable
             _toggleItem.Text = ZoneManager.Instance.IsAnyVisible ? "隐藏全部分区" : "显示全部分区";
 
             var hotkey = string.IsNullOrWhiteSpace(config.Hotkey) ? "未设置" : config.Hotkey;
-            _notifyIcon.Text = $"桌面分区管家\n显示 / 隐藏：{hotkey}";
+            _notifyIcon.Text = $"桌面分区管家\n单击 / 双击图标显示分区\n{hotkey} 显示 / 隐藏";
         }
         catch
         {

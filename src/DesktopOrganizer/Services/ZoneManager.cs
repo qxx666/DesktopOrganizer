@@ -312,6 +312,27 @@ public sealed class ZoneManager
         }
     }
 
+    /// <summary>仅显示 / 激活全部分区，绝不隐藏。供托盘图标的单击/双击调用：
+    /// 用户点图标时分区应当「始终可见」，只有主动退出程序才会关闭分区。</summary>
+    public void ShowOrActivateAll()
+    {
+        // 之前被隐藏（热键 / 菜单）或当前没有任何可见分区：直接显示出来
+        if (IsHiddenByUser || !IsAnyVisible)
+        {
+            ShowAll();
+            return;
+        }
+
+        // 已经显示：仅把各分区窗口激活并前置，不改变可见状态
+        foreach (var window in _windows.Values)
+        {
+            if (window.IsVisible)
+            {
+                window.ShowZone(); // ShowZone 在已可见时会 Activate() 前置
+            }
+        }
+    }
+
     // ---------------------------------------------------------------- 持久化
 
     /// <summary>合并短时间内的多次保存请求（拖动分区时会连续触发）。</summary>

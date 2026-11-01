@@ -80,6 +80,17 @@ public partial class ZoneWindow : Window
         Loaded += (_, _) => RefreshItems();
         Closed += OnClosedInternal;
 
+        // 兜底：任何想把分区窗口最小化的企图（任务栏点击、系统窗口切换等）都立即还原。
+        // 分区应始终可见，只有用户主动退出程序才会关闭。注意 HideAll 走的是 Visibility=Hidden，
+        // 不会触发 WindowState=Minimized，所以不影响热键/菜单的主动隐藏。
+        StateChanged += (_, _) =>
+        {
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
+        };
+
         // 窗口句柄就绪后：先关掉 Win11 给窗口绘制的系统边框（否则无边框窗口也会被画一圈 1px 白线），
         // 再应用外观。
         SourceInitialized += (_, _) =>

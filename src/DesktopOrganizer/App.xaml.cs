@@ -185,6 +185,13 @@ public partial class App : Application
             _tray.SyncMenuState();
         };
 
+        // 单击 / 双击托盘图标：只显示分区，绝不隐藏（只有退出程序才会关闭分区）
+        _tray.ShowRequested += () =>
+        {
+            ZoneManager.Instance.ShowOrActivateAll();
+            _tray.SyncMenuState();
+        };
+
         _tray.LayoutLockToggled += () =>
         {
             var config = ZoneManager.Instance.Config;
