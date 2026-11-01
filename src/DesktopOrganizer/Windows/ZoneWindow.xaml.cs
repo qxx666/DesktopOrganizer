@@ -80,8 +80,42 @@ public partial class ZoneWindow : Window
         Loaded += (_, _) => RefreshItems();
         Closed += OnClosedInternal;
 
-        // 窗口句柄就绪后确保外观已应用（外观不依赖 DWM，纯 WPF 半透明）
-        SourceInitialized += (_, _) => ApplyAppearance();
+        // 窗口句柄就绪后：先关掉 Win11 给窗口绘制的系统边框（否则无边框窗口也会被画一圈 1px 白线），
+        // 再应用外观。
+        SourceInitialized += (_, _) =>
+        {
+            RemoveSystemBorder();
+            ApplyAppearance();
+        };
+    }
+
+    /// <summary>关掉 Win11 给窗口绘制的系统边框色与圆角。WindowStyle=None + AllowsTransparency=True
+    /// 在 Win11 上仍可能被 DWM 画一圈 1px 边框（浅色主题下表现为白线），这里用 DwmSetWindowAttribute
+    /// 显式去除，是分区框「无边框」的真正关键。</summary>
+    private void RemoveSystemBorder()
+    {
+        try
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd == IntPtr.Zero)
+            {
+                return;
+            }
+
+            // 去掉系统边框色（Win11 专用；Win10 无此属性，调用失败被忽略）
+            int borderNone = NativeMethods.DWMWA_COLOR_NONE;
+            NativeMethods.DwmSetWindowAttribute(
+                hwnd, NativeMethods.DWMWA_BORDER_COLOR, ref borderNone, sizeof(int));
+
+            // 不要系统圆角，圆角由我们的玻璃卡片（CornerRadius=20）负责
+            int noRound = NativeMethods.DWMWCP_DONOTROUND;
+            NativeMethods.DwmSetWindowAttribute(
+                hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref noRound, sizeof(int));
+        }
+        catch
+        {
+            // DWM 不可用或属性不被支持时忽略，不影响其余功能
+        }
     }
 
     public ZoneConfig Config => _zone;

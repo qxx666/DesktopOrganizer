@@ -160,6 +160,12 @@ internal static class NativeMethods
     internal const int DWMWA_SYSTEMBACKDROP_TYPE = 38;   // 0x26
     internal const int DWMWA_WINDOW_CORNER_PREFERENCE = 33; // 0x21
 
+    // Win11：把系统给窗口绘制的边框色设为「无」，否则 WindowStyle=None + AllowsTransparency=True
+    // 的窗口仍会被 DWM 画一圈 1px 的系统边框（浅色主题下就是白线）。
+    internal const int DWMWA_BORDER_COLOR = 34;          // 0x22
+    internal const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE); // -2，去掉系统边框色
+    internal const int DWMWA_COLOR_DEFAULT = unchecked((int)0xFFFFFFFF); // -1，恢复系统默认
+
     internal const int DWMSBT_AUTO = 0;
     internal const int DWMSBT_NONE = 1;
     internal const int DWMSBT_MAINWINDOW = 2;             // Mica
