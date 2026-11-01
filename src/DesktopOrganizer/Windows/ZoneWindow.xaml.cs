@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -40,6 +41,7 @@ public partial class ZoneWindow : Window
 
     private FileSystemWatcher? _watcher;
     private bool _isClosing;
+    private bool _isBusy;
 
     // ---- 拖动分区 ----
     private bool _isDraggingZone;
@@ -69,6 +71,12 @@ public partial class ZoneWindow : Window
         _watcherDebounce.Tick += (_, _) =>
         {
             _watcherDebounce.Stop();
+            // 正在后台移动时，目录变化会频繁触发；此时不刷新，等移动完成后的那次统一刷新即可，避免反复重建列表卡顿。
+            if (_isBusy)
+            {
+                return;
+            }
+
             RefreshItems();
         };
 
@@ -887,6 +895,12 @@ public partial class ZoneWindow : Window
         SetDropHighlight(false);
         e.Handled = true;
 
+        // 正在移动时遮罩会拦截输入，这里再兜底挡一次重复拖入
+        if (BusyOverlay.IsVisible)
+        {
+            return;
+        }
+
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0)
         {
             return;
@@ -905,23 +919,72 @@ public partial class ZoneWindow : Window
             return;
         }
 
-        var result = ZoneFolderService.MoveInto(paths, _zone.FolderPath);
+        // 文件夹（尤其跨卷）移动耗时较长，放到后台线程执行，避免 UI 线程被阻塞导致界面假死；
+        // 期间显示进度遮罩，让用户知道正在处理。移动完成后再回到 UI 线程刷新与提示。
+        var count = paths.Length;
+        ShowBusy(count > 1 ? $"正在移动 {count} 个项目…" : "正在移动…");
 
-        RefreshItems();
-
-        if (result.HasError)
+        Task.Run(() =>
         {
-            var message = $"有 {result.Failed} 个项目没能移动进来。\n\n{result.FirstError}";
-            if (result.Moved == 0)
+            var result = ZoneFolderService.MoveInto(paths, _zone.FolderPath);
+
+            // 收尾必须回到 UI 线程
+            Dispatcher.BeginInvoke(new Action(() =>
             {
-                message += "\n\n如果文件正被其它程序占用，请关闭后重试。";
-            }
+                if (_isClosing)
+                {
+                    return;
+                }
 
-            ZoneManager.ShowError(message);
-        }
-        else if (result.Moved > 0)
+                HideBusy();
+                RefreshItems();
+
+                if (result.HasError)
+                {
+                    var message = $"有 {result.Failed} 个项目没能移动进来。\n\n{result.FirstError}";
+                    if (result.Moved == 0)
+                    {
+                        message += "\n\n如果文件正被其它程序占用，请关闭后重试。";
+                    }
+
+                    ZoneManager.ShowError(message);
+                }
+                else if (result.Moved > 0)
+                {
+                    FlashSuccess();
+                }
+            }), DispatcherPriority.Background);
+        });
+    }
+
+    private void ShowBusy(string text)
+    {
+        try
         {
-            FlashSuccess();
+            _isBusy = true;
+            BusyText.Text = text;
+            BusyProgress.IsIndeterminate = true;
+            BusyOverlay.Visibility = Visibility.Visible;
+        }
+        catch
+        {
+            // 遮罩显示失败也不影响移动本身
+        }
+    }
+
+    private void HideBusy()
+    {
+        try
+        {
+            BusyOverlay.Visibility = Visibility.Collapsed;
+        }
+        catch
+        {
+            // ignore
+        }
+        finally
+        {
+            _isBusy = false;
         }
     }
 

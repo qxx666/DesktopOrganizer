@@ -346,5 +346,27 @@
                 <StackPanel x:Name="MenuHost" MinWidth="150" />
             </Border>
         </Popup>
+
+        <!-- ======================= 移动进度遮罩 =======================
+             文件夹（尤其跨卷）移动耗时较长，放在后台线程执行期间显示本遮罩，
+             既避免界面被阻塞成「假死」，也明确告诉用户「正在处理」。 -->
+        <Grid x:Name="BusyOverlay"
+              Visibility="Collapsed"
+              IsHitTestVisible="True"
+              Background="#5C000000">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ProgressBar x:Name="BusyProgress"
+                             Width="170" Height="6"
+                             IsIndeterminate="True"
+                             Foreground="#4C8DFF"
+                             Background="#2A2F3A" />
+                <TextBlock x:Name="BusyText"
+                           Margin="0,12,0,0"
+                           FontSize="12"
+                           Foreground="#E6EBF3"
+                           HorizontalAlignment="Center"
+                           Text="正在移动…" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>
