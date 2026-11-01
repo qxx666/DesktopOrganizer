@@ -17,7 +17,7 @@ namespace DesktopOrganizer.Windows;
 
 public partial class ZoneWindow : Window
 {
-    private const double CollapsedHeight = 36;
+    private const double CollapsedHeight = 42;
     private const double MinZoneWidth = 190;
     private const double MinZoneHeight = 110;
     private const double SnapThreshold = 10;
@@ -143,23 +143,26 @@ public partial class ZoneWindow : Window
         var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
         var dark = config.Appearance == ZoneAppearance.Dark;
 
-        // ---- 玻璃 / 面板背景（半透明 layered，保证对比度，绝不全透/纯白）----
+        // ---- 玻璃背景：半透明 layered + 对角渐变晕染，营造磨砂玻璃的柔和层次 ----
         var baseColor = dark ? Color.FromRgb(0x20, 0x24, 0x2E) : Color.FromRgb(0xF7, 0xF9, 0xFC);
         var panelAlpha = config.EnableGlass
             ? Math.Clamp(config.PanelOpacity, 0.60, 0.97)
             : 1.0;
-        RootPanel.Background = new SolidColorBrush(WithAlpha(baseColor, panelAlpha));
-        Background = Brushes.Transparent; // layered 透明：圆角外透出桌面，玻璃感来自半透明叠色
-        PanelShadow.Opacity = 0.40;
+        var tint = Blend(baseColor, accent, dark ? 0.30 : 0.34); // 左上角带一点强调色晕染
+        RootPanel.Background = new LinearGradientBrush(
+            WithAlpha(tint, panelAlpha),
+            WithAlpha(baseColor, panelAlpha),
+            new Point(0, 0), new Point(1, 1));
+        Background = Brushes.Transparent; // layered 透明：圆角外透出桌面，玻璃感来自半透明叠色 + 渐变
+        PanelShadow.Opacity = 0.30;
 
-        // ---- 外框淡化（极淡高光线）----
+        // ---- 极淡高光描边（参考图：薄薄一层白边，不再用饱和强调色厚边）----
         RestoreFrameBorder();
 
-        // ---- 标题栏：同色略深一档，制造层次，名称浮在上方 ----
-        HeaderBar.Background = new SolidColorBrush(WithAlpha(baseColor, Math.Min(0.97, panelAlpha + 0.10)));
-        HeaderBar.CornerRadius = _zone.Collapsed
-            ? new CornerRadius(11)
-            : new CornerRadius(11, 11, 0, 0);
+        // ---- 标题栏保持透明，名称直接浮在玻璃上（去掉复古的标题色块）----
+        HeaderBar.Background = Brushes.Transparent;
+        HeaderDivider.Background = new SolidColorBrush(WithAlpha(
+            dark ? Colors.White : Colors.Black, 0.08));
 
         AccentDot.Fill = new SolidColorBrush(accent);
 
@@ -183,21 +186,20 @@ public partial class ZoneWindow : Window
         BtnCollapse.Foreground = iconForeground;
         BtnMore.Foreground = iconForeground;
 
-        GripVisual.Stroke = new SolidColorBrush(
-            dark ? Color.FromRgb(0x66, 0x74, 0x8C) : Color.FromRgb(0xB4, 0xBC, 0xC8));
-
         ApplyTopmost();
         RefreshItems();
     }
 
-    /// <summary>按 FrameFaint 把外框刷成极淡的高光线（或彻底无边框）。</summary>
+    /// <summary>按 FrameFaint 把外框刷成极淡的高光描边（薄白边，不再是饱和强调色厚边）。</summary>
     private void RestoreFrameBorder()
     {
-        var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
         var faint = Math.Clamp(_zone.FrameFaint, 0, 100);
-        var borderAlpha = 0.04 + (faint / 100.0) * 0.5; // 0.04 ~ 0.54
+        var dark = ZoneManager.Instance.Config.Appearance == ZoneAppearance.Dark;
+        // 浅色用近白、深色用浅灰，只做一缕边缘高光，不抢戏（参考图风格）
+        var rimColor = dark ? Color.FromRgb(0xD2, 0xD8, 0xE2) : Color.FromRgb(0xFF, 0xFF, 0xFF);
+        var rimAlpha = faint <= 0 ? 0 : (0.20 + (faint / 100.0) * 0.40); // 0.20 ~ 0.60
 
-        RootPanel.BorderBrush = new SolidColorBrush(WithAlpha(accent, borderAlpha));
+        RootPanel.BorderBrush = new SolidColorBrush(WithAlpha(rimColor, rimAlpha));
         RootPanel.BorderThickness = new Thickness(faint <= 0 ? 0 : 1);
     }
 
@@ -241,12 +243,21 @@ public partial class ZoneWindow : Window
         return fallback;
     }
 
+    /// <summary>把颜色 b 按权重 t 混入 a，返回中间色（用于玻璃渐变的强调色晕染）。</summary>
+    private static Color Blend(Color a, Color b, double t)
+    {
+        t = Math.Clamp(t, 0, 1);
+        return Color.FromRgb(
+            (byte)(a.R + (b.R - a.R) * t),
+            (byte)(a.G + (b.G - a.G) * t),
+            (byte)(a.B + (b.B - a.B) * t));
+    }
+
     private void UpdateCollapseVisual()
     {
         var collapsed = _zone.Collapsed;
 
         ContentArea.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
-        GripVisual.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
 
         ThumbN.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         ThumbW.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;

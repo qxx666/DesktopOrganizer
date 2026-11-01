@@ -29,7 +29,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="Transparent" CornerRadius="5">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="6">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -46,299 +46,299 @@
         </Style>
     </Window.Resources>
 
-    <Border x:Name="RootPanel"
-            CornerRadius="12"
-            BorderThickness="1"
-            Background="Transparent"
-            BorderBrush="#554C8DFF"
-            SnapsToDevicePixels="True">
-        <Border.Effect>
-            <DropShadowEffect x:Name="PanelShadow"
-                              BlurRadius="20"
-                              ShadowDepth="3"
-                              Direction="270"
-                              Opacity="0.38"
-                              Color="#000000" />
-        </Border.Effect>
+    <!-- 根容器：玻璃卡片 RootPanel 在下，缩放热区在上（放在玻璃层之外，避免圆角裁掉角落拖拽握把） -->
+    <Grid x:Name="RootGrid">
 
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="36" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+        <!-- ======================= 玻璃卡片 ======================= -->
+        <Border x:Name="RootPanel"
+                CornerRadius="20"
+                BorderThickness="1"
+                Background="Transparent"
+                BorderBrush="#554C8DFF"
+                SnapsToDevicePixels="True">
+            <Border.Effect>
+                <DropShadowEffect x:Name="PanelShadow"
+                                  BlurRadius="32"
+                                  ShadowDepth="6"
+                                  Direction="270"
+                                  Opacity="0.30"
+                                  Color="#000000" />
+            </Border.Effect>
 
-            <!-- ======================= 标题栏 ======================= -->
-            <Border x:Name="HeaderBar"
-                    Grid.Row="0"
-                    CornerRadius="11,11,0,0"
-                    Background="Transparent"
-                    MouseLeftButtonDown="Header_MouseLeftButtonDown"
-                    MouseMove="Header_MouseMove"
-                    MouseLeftButtonUp="Header_MouseLeftButtonUp"
-                    MouseRightButtonUp="Header_MouseRightButtonUp">
-                <Grid Margin="10,0,4,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="42" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-                    <Ellipse x:Name="AccentDot"
-                             Grid.Column="0"
-                             Width="8" Height="8"
-                             Margin="0,0,8,0"
-                             VerticalAlignment="Center"
-                             Fill="#4C8DFF" />
+                <!-- ======================= 标题栏（透明，标题浮在玻璃上） ======================= -->
+                <Border x:Name="HeaderBar"
+                        Grid.Row="0"
+                        Background="Transparent"
+                        MouseLeftButtonDown="Header_MouseLeftButtonDown"
+                        MouseMove="Header_MouseMove"
+                        MouseLeftButtonUp="Header_MouseLeftButtonUp"
+                        MouseRightButtonUp="Header_MouseRightButtonUp">
+                    <Grid Margin="16,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                    <TextBlock x:Name="TitleText"
-                               Grid.Column="1"
-                               VerticalAlignment="Center"
-                               FontSize="12.5"
-                               FontWeight="SemiBold"
-                               Foreground="#F2F5FA"
-                               TextTrimming="CharacterEllipsis"
-                               Text="分区" />
+                        <Ellipse x:Name="AccentDot"
+                                 Grid.Column="0"
+                                 Width="7" Height="7"
+                                 Margin="0,0,9,0"
+                                 VerticalAlignment="Center"
+                                 Fill="#4C8DFF" />
 
-                    <TextBlock x:Name="CountText"
-                               Grid.Column="2"
-                               Margin="8,0,4,0"
-                               VerticalAlignment="Center"
-                               FontSize="11"
-                               Foreground="#9FB0C8"
-                               Text="" />
+                        <TextBlock x:Name="TitleText"
+                                   Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="#F2F5FA"
+                                   TextTrimming="CharacterEllipsis"
+                                   Text="分区" />
 
-                    <Button x:Name="BtnOpenFolder"
-                            Grid.Column="3"
-                            Style="{StaticResource HeaderIconButton}"
-                            ToolTip="在资源管理器中打开分区文件夹"
-                            Click="OpenFolder_Click">
-                        <Path Data="M 1,3 L 4.5,3 L 6,5.2 L 11,5.2 L 11,10.5 L 1,10.5 Z"
-                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
-                              StrokeThickness="1.4"
-                              StrokeLineJoin="Round"
-                              Width="12" Height="12"
-                              Stretch="Uniform" />
-                    </Button>
+                        <TextBlock x:Name="CountText"
+                                   Grid.Column="2"
+                                   Margin="8,0,4,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="#9FB0C8"
+                                   Text="" />
 
-                    <Button x:Name="BtnCollapse"
-                            Grid.Column="4"
-                            Style="{StaticResource HeaderIconButton}"
-                            ToolTip="折叠 / 展开"
-                            Click="ToggleCollapse_Click">
-                        <Path Data="M 1,3.2 L 5.5,7.8 L 10,3.2"
-                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
-                              StrokeThickness="1.7"
-                              StrokeStartLineCap="Round"
-                              StrokeEndLineCap="Round"
-                              StrokeLineJoin="Round"
-                              Width="12" Height="12"
-                              Stretch="Uniform">
-                            <Path.RenderTransform>
-                                <RotateTransform x:Name="ChevronRotate" CenterX="6" CenterY="6" Angle="0" />
-                            </Path.RenderTransform>
-                        </Path>
-                    </Button>
+                        <Button x:Name="BtnOpenFolder"
+                                Grid.Column="3"
+                                Style="{StaticResource HeaderIconButton}"
+                                ToolTip="在资源管理器中打开分区文件夹"
+                                Click="OpenFolder_Click">
+                            <Path Data="M 1,3 L 4.5,3 L 6,5.2 L 11,5.2 L 11,10.5 L 1,10.5 Z"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                                  StrokeThickness="1.4"
+                                  StrokeLineJoin="Round"
+                                  Width="12" Height="12"
+                                  Stretch="Uniform" />
+                        </Button>
 
-                    <Button x:Name="BtnMore"
-                            Grid.Column="5"
-                            Style="{StaticResource HeaderIconButton}"
-                            ToolTip="更多操作"
-                            Click="More_Click">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Ellipse Width="3" Height="3" Margin="1,0" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" />
-                            <Ellipse Width="3" Height="3" Margin="1,0" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" />
-                            <Ellipse Width="3" Height="3" Margin="1,0" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
-            </Border>
+                        <Button x:Name="BtnCollapse"
+                                Grid.Column="4"
+                                Style="{StaticResource HeaderIconButton}"
+                                ToolTip="折叠 / 展开"
+                                Click="ToggleCollapse_Click">
+                            <Path Data="M 1,3.2 L 5.5,7.8 L 10,3.2"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                                  StrokeThickness="1.7"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Width="12" Height="12"
+                                  Stretch="Uniform">
+                                <Path.RenderTransform>
+                                    <RotateTransform x:Name="ChevronRotate" CenterX="6" CenterY="6" Angle="0" />
+                                </Path.RenderTransform>
+                            </Path>
+                        </Button>
 
-            <!-- ======================= 内容区 ======================= -->
-            <Grid x:Name="ContentArea" Grid.Row="1">
-                <ScrollViewer x:Name="Scroller"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled"
-                              Padding="6,7,4,8"
-                              Focusable="False"
-                              MouseRightButtonUp="Content_MouseRightButtonUp">
-                    <ScrollViewer.Resources>
-                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}" />
-                    </ScrollViewer.Resources>
-
-                    <ItemsControl x:Name="ItemsHost">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Width="{Binding ItemWidth}"
-                                      Height="{Binding ItemHeight}"
-                                      Margin="1"
-                                      Background="Transparent"
-                                      ToolTip="{Binding TooltipText}"
-                                      MouseLeftButtonDown="Item_MouseLeftButtonDown"
-                                      MouseMove="Item_MouseMove"
-                                      MouseLeftButtonUp="Item_MouseLeftButtonUp"
-                                      MouseRightButtonUp="Item_MouseRightButtonUp">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-
-                                    <Image Grid.Row="0"
-                                           Source="{Binding Icon}"
-                                           Width="{Binding IconSize}"
-                                           Height="{Binding IconSize}"
-                                           Stretch="Uniform"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           RenderOptions.BitmapScalingMode="LowQuality" />
-
-                                    <!-- 名称区：字号 / 行高 / 字体与 FileItemViewModel 里的测量常量保持一致，
-                                         高度和截断方式由视图模型按最长的名称算出来，保证名称完整显示。 -->
-                                    <TextBlock Grid.Row="1"
-                                               Margin="1,2,1,0"
-                                               Height="{Binding NameBoxHeight}"
-                                               Text="{Binding DisplayName}"
-                                               Foreground="{Binding NameBrush}"
-                                               FontFamily="{x:Static models:FileItemViewModel.NameFontFamily}"
-                                               FontSize="{x:Static models:FileItemViewModel.NameFontSize}"
-                                               LineHeight="{x:Static models:FileItemViewModel.NameLineHeight}"
-                                               LineStackingStrategy="BlockLineHeight"
-                                               VerticalAlignment="Center"
-                                               TextAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               TextTrimming="{Binding NameTrimming}" />
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-
-                <!-- 空分区提示 -->
-                <StackPanel x:Name="EmptyHint"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Visibility="Collapsed"
-                            IsHitTestVisible="False">
-                    <Path Data="M 2,6 L 9,6 L 12,10.4 L 22,10.4 L 22,21 L 2,21 Z"
-                          Stroke="#4A5568"
-                          StrokeThickness="1.6"
-                          StrokeLineJoin="Round"
-                          Width="26" Height="26"
-                          Stretch="Uniform"
-                          HorizontalAlignment="Center" />
-                    <TextBlock Text="把文件拖到这里"
-                               Margin="0,10,0,0"
-                               FontSize="11.5"
-                               Foreground="#68758C"
-                               HorizontalAlignment="Center" />
-                </StackPanel>
-
-                <!-- 分区文件夹丢失提示 -->
-                <StackPanel x:Name="MissingHint"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Visibility="Collapsed">
-                    <TextBlock Text="分区文件夹不见了"
-                               FontSize="12"
-                               Foreground="#F5A623"
-                               HorizontalAlignment="Center" />
-                    <TextBlock x:Name="MissingPathText"
-                               FontSize="10.5"
-                               Foreground="#68758C"
-                               MaxWidth="260"
-                               TextWrapping="Wrap"
-                               TextAlignment="Center"
-                               Margin="0,5,0,0"
-                               HorizontalAlignment="Center" />
-                    <Button Content="重新创建文件夹"
-                            Margin="0,12,0,0"
-                            Height="28"
-                            Padding="12,0"
-                            Cursor="Hand"
-                            FontSize="12"
-                            Foreground="White"
-                            Click="RecreateFolder_Click">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="Bd" Background="#4C8DFF" CornerRadius="6">
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Bd" Property="Background" Value="#6BA1FF" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                </StackPanel>
-            </Grid>
-
-            <!-- ======================= 缩放热区 ======================= -->
-            <Thumb x:Name="ThumbN" Grid.RowSpan="2" Height="5" Margin="14,0,14,0"
-                   VerticalAlignment="Top" HorizontalAlignment="Stretch" Cursor="SizeNS"
-                   DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-            <Thumb x:Name="ThumbS" Grid.RowSpan="2" Height="5" Margin="14,0,14,0"
-                   VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Cursor="SizeNS"
-                   DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-            <Thumb x:Name="ThumbW" Grid.RowSpan="2" Width="5" Margin="0,14,0,14"
-                   VerticalAlignment="Stretch" HorizontalAlignment="Left" Cursor="SizeWE"
-                   DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-            <Thumb x:Name="ThumbE" Grid.RowSpan="2" Width="5" Margin="0,14,0,14"
-                   VerticalAlignment="Stretch" HorizontalAlignment="Right" Cursor="SizeWE"
-                   DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-            <Thumb x:Name="ThumbNW" Grid.RowSpan="2" Width="12" Height="12"
-                   VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="SizeNWSE"
-                   DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-            <Thumb x:Name="ThumbNE" Grid.RowSpan="2" Width="12" Height="12"
-                   VerticalAlignment="Top" HorizontalAlignment="Right" Cursor="SizeNESW"
-                   DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-            <Thumb x:Name="ThumbSW" Grid.RowSpan="2" Width="12" Height="12"
-                   VerticalAlignment="Bottom" HorizontalAlignment="Left" Cursor="SizeNESW"
-                   DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-
-            <!-- 右下角：可见的缩放握把 + 热区 -->
-            <Path x:Name="GripVisual"
-                  Grid.RowSpan="2"
-                  Data="M 0,8 L 8,0 M 0,13 L 13,0"
-                  Stroke="#66748C"
-                  StrokeThickness="1.2"
-                  Width="11" Height="11"
-                  Stretch="Uniform"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Bottom"
-                  Margin="0,0,5,5"
-                  IsHitTestVisible="False" />
-            <Thumb x:Name="ThumbSE" Grid.RowSpan="2" Width="16" Height="16"
-                   VerticalAlignment="Bottom" HorizontalAlignment="Right" Cursor="SizeNWSE"
-                   DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-
-            <!-- 下拉菜单（自绘，避免系统菜单在深色主题下样式冲突） -->
-            <Popup x:Name="MenuPopup"
-                   AllowsTransparency="True"
-                   StaysOpen="False"
-                   Placement="RelativePoint"
-                   PopupAnimation="Fade">
-                <Border Background="#F2242832"
-                        BorderBrush="#3D4553"
-                        BorderThickness="1"
-                        CornerRadius="9"
-                        Padding="4"
-                        Margin="8">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.5" Color="#000000" />
-                    </Border.Effect>
-                    <StackPanel x:Name="MenuHost" MinWidth="150" />
+                        <Button x:Name="BtnMore"
+                                Grid.Column="5"
+                                Style="{StaticResource HeaderIconButton}"
+                                ToolTip="更多操作"
+                                Click="More_Click">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="3" Height="3" Margin="1,0" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" />
+                                <Ellipse Width="3" Height="3" Margin="1,0" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" />
+                                <Ellipse Width="3" Height="3" Margin="1,0" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
                 </Border>
-            </Popup>
-        </Grid>
-    </Border>
+
+                <!-- 标题下的极淡分隔线（呼应参考图） -->
+                <Border x:Name="HeaderDivider"
+                        Grid.Row="0"
+                        Height="1"
+                        VerticalAlignment="Bottom"
+                        IsHitTestVisible="False"
+                        Background="#14000000" />
+
+                <!-- ======================= 内容区 ======================= -->
+                <Grid x:Name="ContentArea" Grid.Row="1">
+                    <ScrollViewer x:Name="Scroller"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="10,8,8,10"
+                                  Focusable="False"
+                                  MouseRightButtonUp="Content_MouseRightButtonUp">
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}" />
+                        </ScrollViewer.Resources>
+
+                        <ItemsControl x:Name="ItemsHost">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Width="{Binding ItemWidth}"
+                                          Height="{Binding ItemHeight}"
+                                          Margin="2"
+                                          Background="Transparent"
+                                          ToolTip="{Binding TooltipText}"
+                                          MouseLeftButtonDown="Item_MouseLeftButtonDown"
+                                          MouseMove="Item_MouseMove"
+                                          MouseLeftButtonUp="Item_MouseLeftButtonUp"
+                                          MouseRightButtonUp="Item_MouseRightButtonUp">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Image Grid.Row="0"
+                                               Source="{Binding Icon}"
+                                               Width="{Binding IconSize}"
+                                               Height="{Binding IconSize}"
+                                               Stretch="Uniform"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="LowQuality" />
+
+                                        <!-- 名称区：字号 / 行高 / 字体与 FileItemViewModel 里的测量常量保持一致，
+                                             高度和截断方式由视图模型按最长的名称算出来，保证名称完整显示。 -->
+                                        <TextBlock Grid.Row="1"
+                                                   Margin="1,3,1,0"
+                                                   Height="{Binding NameBoxHeight}"
+                                                   Text="{Binding DisplayName}"
+                                                   Foreground="{Binding NameBrush}"
+                                                   FontFamily="{x:Static models:FileItemViewModel.NameFontFamily}"
+                                                   FontSize="{x:Static models:FileItemViewModel.NameFontSize}"
+                                                   LineHeight="{x:Static models:FileItemViewModel.NameLineHeight}"
+                                                   LineStackingStrategy="BlockLineHeight"
+                                                   VerticalAlignment="Center"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   TextTrimming="{Binding NameTrimming}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- 空分区提示 -->
+                    <StackPanel x:Name="EmptyHint"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                Visibility="Collapsed"
+                                IsHitTestVisible="False">
+                        <Path Data="M 2,6 L 9,6 L 12,10.4 L 22,10.4 L 22,21 L 2,21 Z"
+                              Stroke="#4A5568"
+                              StrokeThickness="1.6"
+                              StrokeLineJoin="Round"
+                              Width="26" Height="26"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center" />
+                        <TextBlock Text="把文件拖到这里"
+                                   Margin="0,10,0,0"
+                                   FontSize="11.5"
+                                   Foreground="#68758C"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- 分区文件夹丢失提示 -->
+                    <StackPanel x:Name="MissingHint"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                Visibility="Collapsed">
+                        <TextBlock Text="分区文件夹不见了"
+                                   FontSize="12"
+                                   Foreground="#F5A623"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock x:Name="MissingPathText"
+                                   FontSize="10.5"
+                                   Foreground="#68758C"
+                                   MaxWidth="260"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   Margin="0,5,0,0"
+                                   HorizontalAlignment="Center" />
+                        <Button Content="重新创建文件夹"
+                                Margin="0,12,0,0"
+                                Height="28"
+                                Padding="12,0"
+                                Cursor="Hand"
+                                FontSize="12"
+                                Foreground="White"
+                                Click="RecreateFolder_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="#4C8DFF" CornerRadius="6">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#6BA1FF" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ======================= 缩放热区（在玻璃层之上、不裁切） ======================= -->
+        <Thumb x:Name="ThumbN" Height="6" Margin="18,0,18,0"
+               VerticalAlignment="Top" HorizontalAlignment="Stretch" Cursor="SizeNS"
+               DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
+        <Thumb x:Name="ThumbS" Height="6" Margin="18,0,18,0"
+               VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Cursor="SizeNS"
+               DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
+        <Thumb x:Name="ThumbW" Width="6" Margin="0,18,0,18"
+               VerticalAlignment="Stretch" HorizontalAlignment="Left" Cursor="SizeWE"
+               DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
+        <Thumb x:Name="ThumbE" Width="6" Margin="0,18,0,18"
+               VerticalAlignment="Stretch" HorizontalAlignment="Right" Cursor="SizeWE"
+               DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
+        <Thumb x:Name="ThumbNW" Width="14" Height="14"
+               VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="SizeNWSE"
+               DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
+        <Thumb x:Name="ThumbNE" Width="14" Height="14"
+               VerticalAlignment="Top" HorizontalAlignment="Right" Cursor="SizeNESW"
+               DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
+        <Thumb x:Name="ThumbSW" Width="14" Height="14"
+               VerticalAlignment="Bottom" HorizontalAlignment="Left" Cursor="SizeNESW"
+               DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
+
+        <!-- 右下角：可见的缩放握把 + 热区 -->
+        <Thumb x:Name="ThumbSE" Width="18" Height="18"
+               VerticalAlignment="Bottom" HorizontalAlignment="Right" Cursor="SizeNWSE"
+               DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
+
+        <!-- 下拉菜单（自绘，避免系统菜单在深色主题下样式冲突） -->
+        <Popup x:Name="MenuPopup"
+               AllowsTransparency="True"
+               StaysOpen="False"
+               Placement="RelativePoint"
+               PopupAnimation="Fade">
+            <Border Background="#F2242832"
+                    BorderBrush="#3D4553"
+                    BorderThickness="1"
+                    CornerRadius="9"
+                    Padding="4"
+                    Margin="8">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.5" Color="#000000" />
+                </Border.Effect>
+                <StackPanel x:Name="MenuHost" MinWidth="150" />
+            </Border>
+        </Popup>
+    </Grid>
 </Window>

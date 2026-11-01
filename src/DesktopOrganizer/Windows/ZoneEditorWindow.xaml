@@ -109,7 +109,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="名称字号" Style="{StaticResource HintText}" Grid.Column="0" VerticalAlignment="Center" />
                     <Slider x:Name="NameFontSizeSlider" Grid.Column="1" Minimum="11" Maximum="34"
-                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="6,0"
+                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="6,0" Value="20"
                             Foreground="{StaticResource TextPrimary}" ValueChanged="OnFontSizeChanged" />
                     <TextBlock x:Name="NameFontSizeValue" Grid.Column="2" Style="{StaticResource HintText}"
                                VerticalAlignment="Center" Text="20" />
@@ -138,7 +138,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="外框淡化" Style="{StaticResource HintText}" Grid.Column="0" VerticalAlignment="Center" />
                     <Slider x:Name="FrameFaintSlider" Grid.Column="1" Minimum="0" Maximum="100"
-                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="6,0"
+                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="6,0" Value="25"
                             Foreground="{StaticResource TextPrimary}" ValueChanged="OnFrameFaintChanged" />
                     <TextBlock x:Name="FrameFaintValue" Grid.Column="2" Style="{StaticResource HintText}"
                                VerticalAlignment="Center" Text="25" />

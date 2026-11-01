@@ -282,14 +282,27 @@ public partial class ZoneEditorWindow : Window
         base.OnKeyDown(e);
     }
 
+    // 初始化期间（InitializeComponent 会触发一次 ValueChanged）控件尚未全部就绪，
+    // 此时 NameFontSizeValue 等兄弟控件还是 null，直接访问会 NullReferenceException。
+    // 用 _initialized 守卫跳过初始化阶段的这次触发；对话框打开后的真实交互时它已是 true。
     private void OnFontSizeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
+        if (!_initialized || NameFontSizeValue == null || NameFontSizeSlider == null)
+        {
+            return;
+        }
+
         NameFontSizeValue.Text = ((int)NameFontSizeSlider.Value).ToString();
         Validate();
     }
 
     private void OnFrameFaintChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
+        if (!_initialized || FrameFaintValue == null || FrameFaintSlider == null)
+        {
+            return;
+        }
+
         FrameFaintValue.Text = ((int)FrameFaintSlider.Value).ToString();
         Validate();
     }
