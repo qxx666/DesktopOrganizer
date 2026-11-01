@@ -165,6 +165,24 @@ Write-Host ''
 Write-Host '  双击 DesktopOrganizer.exe 即可运行，托盘里会出现图标。' -ForegroundColor Yellow
 Write-Host ''
 
+# ---------------------------------------------------------------- 带版本号命名
+# 读取 csproj 里的 <Version>，把发布的单文件 exe 复制一份「带版本号」的名字，
+# 方便区分不同发布（CI 发版也用同样的命名规则）。
+try {
+    $csprojXml = [xml](Get-Content $ProjectFile -Raw)
+    $ver = ("$($csprojXml.Project.PropertyGroup.Version)" -replace '\s', '').Trim()
+    if ($ver) {
+        $mode = if ($Slim) { 'slim' } else { 'standalone' }
+        $destName = "DesktopOrganizer-$ver-$mode.exe"
+        $destPath = Join-Path $outputDir $destName
+        Copy-Item $exe $destPath -Force
+        Write-Host "  带版本号副本：$destPath" -ForegroundColor Green
+    }
+}
+catch {
+    Write-Host "  （未能生成带版本号副本：$_）" -ForegroundColor Yellow
+}
+
 if ((Get-Command explorer -ErrorAction SilentlyContinue)) {
     explorer.exe $outputDir
 }

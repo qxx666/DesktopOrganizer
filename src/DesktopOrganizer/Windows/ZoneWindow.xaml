@@ -7,6 +7,8 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
+        BorderThickness="0"
+        BorderBrush="Transparent"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         WindowStartupLocation="Manual"
@@ -45,6 +47,22 @@
             </Setter>
         </Style>
     </Window.Resources>
+
+    <!-- 关键：WPF 的 Window 默认 ControlTemplate 外层包了一个 Border，其 BorderThickness / BorderBrush
+         跟着 Window 的默认值走（系统主题下常非零），会在窗口矩形边缘画出一圈「直角」系统边框，
+         正好套在圆角玻璃卡片之外，被误认成分区框的粗边框。这里显式覆盖窗口模板，外层 Border
+         强制无边框、透明画笔，从窗口层级彻底去掉这圈框。 -->
+    <Window.Template>
+        <ControlTemplate TargetType="Window">
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="Transparent"
+                    BorderThickness="0">
+                <AdornerDecorator>
+                    <ContentPresenter />
+                </AdornerDecorator>
+            </Border>
+        </ControlTemplate>
+    </Window.Template>
 
     <!-- 根容器：玻璃卡片 RootPanel 在下，缩放热区在上（放在玻璃层之外，避免圆角裁掉角落拖拽握把） -->
     <Grid x:Name="RootGrid">
