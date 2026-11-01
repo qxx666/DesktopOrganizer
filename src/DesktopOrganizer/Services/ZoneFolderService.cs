@@ -148,6 +148,70 @@ public static class ZoneFolderService
     }
 
     /// <summary>
+    /// 移动单个文件或目录到目标路径，自动处理跨卷（不同盘符 / 网络盘）的情况。
+    /// 同卷用 File.Move / Directory.Move（原子、快速）；跨卷则先递归复制再删除源，
+    /// 且只有在复制全部成功之后才删源——中途失败也不会丢失源数据。
+    /// </summary>
+    public static void MoveFileOrDirectory(string source, string target)
+    {
+        if (Directory.Exists(source))
+        {
+            if (SameVolume(source, target))
+            {
+                Directory.Move(source, target);
+            }
+            else
+            {
+                CopyDirectory(source, target);
+                Directory.Delete(source, recursive: true);
+            }
+        }
+        else
+        {
+            if (SameVolume(source, target))
+            {
+                File.Move(source, target);
+            }
+            else
+            {
+                File.Copy(source, target);
+                File.Delete(source);
+            }
+        }
+    }
+
+    /// <summary>判断两个路径是否位于同一个卷（盘符 / 网络共享根）。取不到根时保守返回 false，走更安全的复制+删除。</summary>
+    private static bool SameVolume(string a, string b)
+    {
+        try
+        {
+            var rootA = Path.GetPathRoot(Path.GetFullPath(a));
+            var rootB = Path.GetPathRoot(Path.GetFullPath(b));
+            return string.Equals(rootA, rootB, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>递归复制目录（含子目录与文件），不覆盖已存在的目标项。</summary>
+    private static void CopyDirectory(string source, string target)
+    {
+        Directory.CreateDirectory(target);
+
+        foreach (var file in Directory.EnumerateFiles(source))
+        {
+            File.Copy(file, Path.Combine(target, Path.GetFileName(file)), overwrite: false);
+        }
+
+        foreach (var dir in Directory.EnumerateDirectories(source))
+        {
+            CopyDirectory(dir, Path.Combine(target, Path.GetFileName(dir)));
+        }
+    }
+
+    /// <summary>
     /// 把一批路径移动进目标目录。已经在目标目录里的会被跳过（而不是报错）。
     /// 不做任何删除操作，移动失败时原文件保持不动。
     /// </summary>
@@ -198,14 +262,10 @@ public static class ZoneFolderService
 
                 var target = GetUniqueTargetPath(targetFolder, source);
 
-                if (isDirectory)
-                {
-                    Directory.Move(source, target);
-                }
-                else
-                {
-                    File.Move(source, target);
-                }
+                // 同卷用 Move（原子、快）；跨卷（不同盘符 / 网络盘）Directory.Move 会抛
+                // "Source and destination path must have identical roots" 异常，必须退化为
+                // 先递归复制、再删除源。复制全部成功后才删源，避免半途失败丢数据。
+                MoveFileOrDirectory(source, target);
 
                 moved++;
             }

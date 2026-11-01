@@ -1001,10 +1001,12 @@ public partial class ZoneWindow : Window
         // 来自第三方程序的 HDROP，资源管理器默认按「复制」处理（保留源文件），
         // 表现就是「拖出一份副本、分区里原文件还在」。加上 PreferredDropEffect=Move，
         // 让资源管理器默认执行移动——拖出即从分区移除。用户按住 Ctrl 仍可复制。
+        // 注意：格式名必须是 Win32 的 CFSTR_PREFERREDDROPEFFECT = "Preferred DropEffect"
+        // （中间的空格不能省），写成 "PreferredDropEffect" 资源管理器识别不到，会退回复制。
         try
         {
             data.SetData(
-                "PreferredDropEffect",
+                "Preferred DropEffect",
                 new MemoryStream(BitConverter.GetBytes((int)DragDropEffects.Move)));
         }
         catch
