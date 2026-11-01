@@ -64,6 +64,9 @@ public sealed class ZoneConfig
     /// <summary>分区名称对齐方式：居左或居中，默认居中。</summary>
     public ZoneNameAlignment NameAlignment { get; set; } = ZoneNameAlignment.Center;
 
+    /// <summary>分区面板不透明度 0~1。0 = 完全透明（仅标题与文件浮在桌面上），1 = 不透明。默认 0.78。</summary>
+    public double Opacity { get; set; } = 0.78;
+
     /// <summary>外框淡化程度 0~100，越大边框越明显。默认 25（很淡的玻璃高光线）。</summary>
     public double FrameFaint { get; set; } = 25;
 

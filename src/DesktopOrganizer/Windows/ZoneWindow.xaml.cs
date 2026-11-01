@@ -235,8 +235,9 @@ public partial class ZoneWindow : Window
         var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
         var dark = config.Appearance == ZoneAppearance.Dark;
         var baseColor = dark ? Color.FromRgb(0x20, 0x24, 0x2E) : Color.FromRgb(0xF7, 0xF9, 0xFC);
+        // 分区级透明度：0（全透明）~ 1（不透明）。关闭玻璃时强制不透明实色。
         var panelAlpha = config.EnableGlass
-            ? Math.Clamp(config.PanelOpacity, 0.60, 0.97)
+            ? Math.Clamp(_zone.Opacity, 0.0, 1.0)
             : 1.0;
         if (highlight)
         {
@@ -478,10 +479,19 @@ public partial class ZoneWindow : Window
         var newLeft = _dragWindowOrigin.X + (current.X - _dragCursorOrigin.X);
         var newTop = _dragWindowOrigin.Y + (current.Y - _dragCursorOrigin.Y);
 
-        ApplySnapping(ref newLeft, ref newTop);
+        var (v, h) = ApplySnapping(ref newLeft, ref newTop);
 
         Left = newLeft;
         Top = newTop;
+
+        if (v.Count > 0 || h.Count > 0)
+        {
+            AlignmentGuides.Show(v, h);
+        }
+        else
+        {
+            AlignmentGuides.Hide();
+        }
     }
 
     private void Header_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => EndZoneDrag();
@@ -495,6 +505,7 @@ public partial class ZoneWindow : Window
 
         _isDraggingZone = false;
         HeaderBar.ReleaseMouseCapture();
+        AlignmentGuides.Hide();
         PersistLayout();
     }
 
@@ -504,12 +515,15 @@ public partial class ZoneWindow : Window
         e.Handled = true;
     }
 
-    /// <summary>拖动时对齐到其它分区边缘和屏幕边缘。</summary>
-    private void ApplySnapping(ref double left, ref double top)
+    /// <summary>拖动时对齐到其它分区边缘和屏幕边缘，并返回被对齐到的参考线屏幕坐标。</summary>
+    private (List<double> Vertical, List<double> Horizontal) ApplySnapping(ref double left, ref double top)
     {
+        var vertical = new List<double>();
+        var horizontal = new List<double>();
+
         if (!ZoneManager.Instance.Config.SnapEnabled)
         {
-            return;
+            return (vertical, horizontal);
         }
 
         var width = Width;
@@ -541,8 +555,10 @@ public partial class ZoneWindow : Window
             targetsY.Add(other.Y + (other.Collapsed ? CollapsedHeight : other.Height));
         }
 
+        // 左 / 右边缘二选一吸附，记录被对齐到的目标坐标（即参考线位置）
         var bestX = double.NaN;
         var bestXDistance = SnapThreshold;
+        var bestXTarget = double.NaN;
 
         foreach (var target in targetsX)
         {
@@ -551,6 +567,7 @@ public partial class ZoneWindow : Window
             {
                 bestXDistance = d1;
                 bestX = target;
+                bestXTarget = target;
             }
 
             var d2 = Math.Abs(left + width - target);
@@ -558,16 +575,22 @@ public partial class ZoneWindow : Window
             {
                 bestXDistance = d2;
                 bestX = target - width;
+                bestXTarget = target;
             }
         }
 
         if (!double.IsNaN(bestX))
         {
             left = bestX;
+            if (!double.IsNaN(bestXTarget))
+            {
+                vertical.Add(bestXTarget);
+            }
         }
 
         var bestY = double.NaN;
         var bestYDistance = SnapThreshold;
+        var bestYTarget = double.NaN;
 
         foreach (var target in targetsY)
         {
@@ -576,6 +599,7 @@ public partial class ZoneWindow : Window
             {
                 bestYDistance = d1;
                 bestY = target;
+                bestYTarget = target;
             }
 
             var d2 = Math.Abs(top + height - target);
@@ -583,13 +607,127 @@ public partial class ZoneWindow : Window
             {
                 bestYDistance = d2;
                 bestY = target - height;
+                bestYTarget = target;
             }
         }
 
         if (!double.IsNaN(bestY))
         {
             top = bestY;
+            if (!double.IsNaN(bestYTarget))
+            {
+                horizontal.Add(bestYTarget);
+            }
         }
+
+        return (vertical, horizontal);
+    }
+
+    /// <summary>缩放时把正在拖动的边缘吸附到其它分区 / 屏幕边缘，返回被对齐到的参考线屏幕坐标。</summary>
+    private (List<double> Vertical, List<double> Horizontal) ApplyResizeSnapping(
+        ref double left, ref double top, ref double width, ref double height,
+        bool wantLeft, bool wantRight, bool wantTop, bool wantBottom)
+    {
+        var vertical = new List<double>();
+        var horizontal = new List<double>();
+
+        if (!ZoneManager.Instance.Config.SnapEnabled)
+        {
+            return (vertical, horizontal);
+        }
+
+        var targetsX = new List<double>
+        {
+            SystemParameters.VirtualScreenLeft,
+            SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth,
+        };
+
+        var targetsY = new List<double>
+        {
+            SystemParameters.VirtualScreenTop,
+            SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight,
+        };
+
+        foreach (var other in ZoneManager.Instance.AllZoneConfigs)
+        {
+            if (other.Id == _zone.Id || !other.Visible)
+            {
+                continue;
+            }
+
+            targetsX.Add(other.X);
+            targetsX.Add(other.X + other.Width);
+
+            targetsY.Add(other.Y);
+            targetsY.Add(other.Y + (other.Collapsed ? CollapsedHeight : other.Height));
+        }
+
+        var right = left + width;
+        var bottom = top + height;
+
+        if (wantLeft)
+        {
+            var snapped = SnapEdgeToTargets(left, targetsX, out var line);
+            if (line.HasValue)
+            {
+                vertical.Add(line.Value);
+                left = snapped;
+                width = right - left;
+            }
+        }
+
+        if (wantRight)
+        {
+            var snapped = SnapEdgeToTargets(right, targetsX, out var line);
+            if (line.HasValue)
+            {
+                vertical.Add(line.Value);
+                width = Math.Max(MinZoneWidth, snapped - left);
+            }
+        }
+
+        if (wantTop)
+        {
+            var snapped = SnapEdgeToTargets(top, targetsY, out var line);
+            if (line.HasValue)
+            {
+                horizontal.Add(line.Value);
+                top = snapped;
+                height = bottom - top;
+            }
+        }
+
+        if (wantBottom)
+        {
+            var snapped = SnapEdgeToTargets(bottom, targetsY, out var line);
+            if (line.HasValue)
+            {
+                horizontal.Add(line.Value);
+                height = Math.Max(MinZoneHeight, snapped - top);
+            }
+        }
+
+        return (vertical, horizontal);
+    }
+
+    private double SnapEdgeToTargets(double edge, List<double> targets, out double? line)
+    {
+        line = null;
+        var best = edge;
+        var bestDist = SnapThreshold;
+
+        foreach (var target in targets)
+        {
+            var d = Math.Abs(edge - target);
+            if (d < bestDist)
+            {
+                bestDist = d;
+                best = target;
+                line = target;
+            }
+        }
+
+        return best;
     }
 
     /// <summary>取光标位置并换算成 WPF 的 DIP 坐标。</summary>
@@ -624,11 +762,13 @@ public partial class ZoneWindow : Window
     {
         if (ZoneManager.Instance.LayoutLocked || _zone.Collapsed)
         {
+            AlignmentGuides.Hide();
             return;
         }
 
         if (sender is not FrameworkElement thumb)
         {
+            AlignmentGuides.Hide();
             return;
         }
 
@@ -664,14 +804,30 @@ public partial class ZoneWindow : Window
             height = Math.Max(MinZoneHeight, height + e.VerticalChange);
         }
 
+        var (v, h) = ApplyResizeSnapping(
+            ref left, ref top, ref width, ref height, wantLeft, wantRight, wantTop, wantBottom);
+
         Left = left;
         Top = top;
         Width = width;
         Height = height;
         _zone.ExpandedHeight = height;
+
+        if (v.Count > 0 || h.Count > 0)
+        {
+            AlignmentGuides.Show(v, h);
+        }
+        else
+        {
+            AlignmentGuides.Hide();
+        }
     }
 
-    private void ResizeThumb_DragCompleted(object sender, DragCompletedEventArgs e) => PersistLayout();
+    private void ResizeThumb_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        AlignmentGuides.Hide();
+        PersistLayout();
+    }
 
     // ================================================================ 拖放：接收文件
 
@@ -893,17 +1049,76 @@ public partial class ZoneWindow : Window
         Action? Action,
         bool IsSeparator = false,
         bool IsChecked = false,
-        bool IsDanger = false);
-
-    private void OpenMenu(IReadOnlyList<MenuEntry> entries, Point location)
+        bool IsDanger = false,
+        IReadOnlyList<MenuEntry>? Children = null)
     {
-        MenuHost.Children.Clear();
+        public bool HasChildren => Children != null && Children.Count > 0;
+    }
 
+    // 当前打开的子菜单（排序方式 ▸ 等）。同一时刻只允许一个子菜单展开。
+    private Popup? _openSubmenu;
+
+    private void CloseSubmenu()
+    {
+        if (_openSubmenu != null)
+        {
+            _openSubmenu.IsOpen = false;
+            RootGrid.Children.Remove(_openSubmenu);
+            _openSubmenu = null;
+        }
+    }
+
+    /// <summary>打开一个子菜单并定位到父行右侧；打开新子菜单前先关闭旧的那一个。</summary>
+    private void OpenSubmenu(Border parentRow, IReadOnlyList<MenuEntry> children)
+    {
+        CloseSubmenu();
+
+        var sub = new Popup
+        {
+            AllowsTransparency = true,
+            StaysOpen = false,
+            Placement = PlacementMode.RelativePoint,
+            PopupAnimation = PopupAnimation.Fade,
+            PlacementTarget = RootPanel,
+        };
+
+        var border = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(0xFA, 0x24, 0x28, 0x32)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0x3D, 0x45, 0x53)),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(9),
+            Padding = new Thickness(4),
+            Margin = new Thickness(8),
+        };
+        border.Effect = new DropShadowEffect { BlurRadius = 18, ShadowDepth = 3, Opacity = 0.5, Color = Colors.Black };
+
+        var panel = new StackPanel { MinWidth = 150 };
+        BuildMenuRows(panel, children, isSubmenuLevel: true);
+        border.Child = panel;
+        sub.Child = border;
+
+        // 定位到父行的右侧（相对 RootPanel 坐标系）
+        var origin = parentRow.TranslatePoint(new Point(parentRow.ActualWidth, 0), RootPanel);
+        sub.HorizontalOffset = origin.X;
+        sub.VerticalOffset = origin.Y;
+
+        // 鼠标真正离开子菜单才收起，避免从父行划向子菜单途中误关
+        border.MouseLeave += (_, _) => CloseSubmenu();
+
+        RootGrid.Children.Add(sub);
+        sub.IsOpen = true;
+        _openSubmenu = sub;
+    }
+
+    /// <summary>把一组菜单项画进 host。isSubmenuLevel=true 时（子菜单内部）普通项不再触发关闭子菜单。</summary>
+    private void BuildMenuRows(Panel host, IReadOnlyList<MenuEntry> entries, bool isSubmenuLevel)
+    {
         foreach (var entry in entries)
         {
             if (entry.IsSeparator)
             {
-                MenuHost.Children.Add(new Border
+                host.Children.Add(new Border
                 {
                     Height = 1,
                     Margin = new Thickness(8, 4, 8, 4),
@@ -932,11 +1147,22 @@ public partial class ZoneWindow : Window
                     : Color.FromRgb(0xE4, 0xE9, 0xF2)),
             };
 
+            var arrow = new TextBlock
+            {
+                Text = "\u25B8",
+                FontSize = 11,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(10, 0, 0, 0),
+                Foreground = new SolidColorBrush(Color.FromRgb(0x9F, 0xB0, 0xC8)),
+                Visibility = entry.HasChildren ? Visibility.Visible : Visibility.Collapsed,
+            };
+
             var row = new StackPanel { Orientation = Orientation.Horizontal };
             row.Children.Add(check);
             row.Children.Add(label);
+            row.Children.Add(arrow);
 
-            var host = new Border
+            var host2 = new Border
             {
                 Padding = new Thickness(4, 7, 16, 7),
                 CornerRadius = new CornerRadius(5),
@@ -945,31 +1171,61 @@ public partial class ZoneWindow : Window
                 Child = row,
             };
 
-            var action = entry.Action;
-            if (action == null)
+            if (entry.Action == null && !entry.HasChildren)
             {
-                host.Opacity = 0.45;
-                host.Cursor = Cursors.Arrow;
+                // 纯分隔 / 占位，置灰
+                host2.Opacity = 0.45;
+                host2.Cursor = Cursors.Arrow;
             }
             else
             {
-                host.MouseEnter += (_, _) =>
-                    host.Background = new SolidColorBrush(Color.FromArgb(0x55, 0x4C, 0x8D, 0xFF));
+                host2.MouseEnter += (_, _) =>
+                    host2.Background = new SolidColorBrush(Color.FromArgb(0x55, 0x4C, 0x8D, 0xFF));
+                host2.MouseLeave += (_, _) => host2.Background = Brushes.Transparent;
 
-                host.MouseLeave += (_, _) => host.Background = Brushes.Transparent;
-
-                host.MouseLeftButtonUp += (_, args) =>
+                if (entry.HasChildren)
                 {
-                    args.Handled = true;
-                    MenuPopup.IsOpen = false;
+                    // 子菜单父项：悬停或点击都展开；同一层悬停到别的项时由对方的 MouseEnter 先 CloseSubmenu
+                    host2.MouseEnter += (_, _) => OpenSubmenu(host2, entry.Children!);
+                    host2.MouseLeftButtonUp += (_, args) =>
+                    {
+                        args.Handled = true;
+                        OpenSubmenu(host2, entry.Children!);
+                    };
+                }
+                else
+                {
+                    // 普通动作项：在根层级悬停到它时要收起已展开的子菜单
+                    if (!isSubmenuLevel)
+                    {
+                        host2.MouseEnter += (_, _) => CloseSubmenu();
+                    }
 
-                    // 延后到下一次消息循环，避免弹窗在关闭动画中被打断
-                    Dispatcher.BeginInvoke(action, DispatcherPriority.Background);
-                };
+                    var action = entry.Action;
+                    host2.MouseLeftButtonUp += (_, args) =>
+                    {
+                        args.Handled = true;
+                        MenuPopup.IsOpen = false;
+                        CloseSubmenu();
+
+                        // 延后到下一次消息循环，避免弹窗在关闭动画中被打断
+                        if (action != null)
+                        {
+                            Dispatcher.BeginInvoke(action, DispatcherPriority.Background);
+                        }
+                    };
+                }
             }
 
-            MenuHost.Children.Add(host);
+            host.Children.Add(host2);
         }
+    }
+
+    private void OpenMenu(IReadOnlyList<MenuEntry> entries, Point location)
+    {
+        MenuHost.Children.Clear();
+        CloseSubmenu();
+        BuildMenuRows(MenuHost, entries, isSubmenuLevel: false);
 
         MenuPopup.PlacementTarget = RootPanel;
         MenuPopup.Placement = PlacementMode.RelativePoint;
@@ -980,28 +1236,34 @@ public partial class ZoneWindow : Window
 
     private void ShowZoneMenu(Point location)
     {
-        var locked = ZoneManager.Instance.LayoutLocked;
-
         var entries = new List<MenuEntry>
         {
             new("打开分区文件夹", OpenZoneFolder),
             new("在资源管理器中显示", RevealZoneFolder),
             new("刷新", RefreshItems),
+
             new("", null, IsSeparator: true),
+
+            // 排序方式折叠成子菜单，避免菜单过长
+            new("排序方式", null, Children: new List<MenuEntry>
+            {
+                new("按名称排序", () => SetSortMode(ZoneSortMode.Name), IsChecked: _zone.SortMode == ZoneSortMode.Name),
+                new("按修改时间排序", () => SetSortMode(ZoneSortMode.DateModified), IsChecked: _zone.SortMode == ZoneSortMode.DateModified),
+                new("按大小排序", () => SetSortMode(ZoneSortMode.Size), IsChecked: _zone.SortMode == ZoneSortMode.Size),
+                new("按类型排序", () => SetSortMode(ZoneSortMode.Type), IsChecked: _zone.SortMode == ZoneSortMode.Type),
+                new("", null, IsSeparator: true),
+                new(_zone.Descending ? "改为升序 ▲" : "改为降序 ▼", ToggleSortDirection),
+            }),
+
             new("分区设置…", EditZoneSettings),
             new("新建分区…", () => ZoneManager.Instance.AddZoneInteractive(this)),
+
             new("", null, IsSeparator: true),
-            new("按名称排序", () => SetSortMode(ZoneSortMode.Name), IsChecked: _zone.SortMode == ZoneSortMode.Name),
-            new("按修改时间排序", () => SetSortMode(ZoneSortMode.DateModified), IsChecked: _zone.SortMode == ZoneSortMode.DateModified),
-            new("按大小排序", () => SetSortMode(ZoneSortMode.Size), IsChecked: _zone.SortMode == ZoneSortMode.Size),
-            new("按类型排序", () => SetSortMode(ZoneSortMode.Type), IsChecked: _zone.SortMode == ZoneSortMode.Type),
-            new(_zone.Descending ? "改为升序" : "改为降序", ToggleSortDirection),
-            new("", null, IsSeparator: true),
-            new("完整显示名称（不缩略）", ToggleFullItemName, IsChecked: ZoneManager.Instance.Config.FullItemName),
-            new("", null, IsSeparator: true),
-            new(locked ? "解锁布局" : "锁定布局", ToggleLayoutLock, IsChecked: locked),
+
             new(_zone.Collapsed ? "展开分区" : "折叠分区", ToggleCollapse),
+
             new("", null, IsSeparator: true),
+
             new("删除这个分区…", ConfirmDeleteZone, IsDanger: true),
         };
 

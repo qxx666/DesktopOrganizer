@@ -62,6 +62,8 @@ public partial class ZoneEditorWindow : Window
             NameFontSizeValue.Text = ((int)existing.NameFontSize).ToString();
             AlignLeftRadio.IsChecked = existing.NameAlignment != ZoneNameAlignment.Center;
             AlignCenterRadio.IsChecked = existing.NameAlignment == ZoneNameAlignment.Center;
+            OpacitySlider.Value = existing.Opacity;
+            OpacityValue.Text = existing.Opacity.ToString("0.00");
         }
         else
         {
@@ -70,6 +72,10 @@ public partial class ZoneEditorWindow : Window
             FolderHint.Text = "拖进分区的文件会被真实移动到上面这个文件夹里。";
             NameBox.Text = SuggestName();
             FolderBox.Text = SuggestFolder(NameBox.Text);
+
+            var defaultOpacity = Math.Clamp(ZoneManager.Instance.Config.PanelOpacity, 0.0, 1.0);
+            OpacitySlider.Value = defaultOpacity;
+            OpacityValue.Text = defaultOpacity.ToString("0.00");
         }
 
         _initialized = true;
@@ -294,6 +300,16 @@ public partial class ZoneEditorWindow : Window
         Validate();
     }
 
+    private void OnOpacityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_initialized || OpacityValue == null || OpacitySlider == null)
+        {
+            return;
+        }
+
+        OpacityValue.Text = OpacitySlider.Value.ToString("0.00");
+    }
+
     private void OnAlignChanged(object sender, RoutedEventArgs e) => Validate();
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
@@ -319,6 +335,7 @@ public partial class ZoneEditorWindow : Window
             _existing.NameAlignment = AlignCenterRadio.IsChecked == true
                 ? ZoneNameAlignment.Center
                 : ZoneNameAlignment.Left;
+            _existing.Opacity = OpacitySlider.Value;
             Result = _existing;
         }
         else
@@ -333,6 +350,7 @@ public partial class ZoneEditorWindow : Window
                 NameAlignment = AlignCenterRadio.IsChecked == true
                     ? ZoneNameAlignment.Center
                     : ZoneNameAlignment.Left,
+                Opacity = OpacitySlider.Value,
             };
         }
 

@@ -118,7 +118,7 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock Text="面板通透度" Style="{StaticResource FieldLabel}" Width="104" />
+                        <TextBlock Text="默认通透度（新分区）" Style="{StaticResource FieldLabel}" Width="104" />
                         <StackPanel x:Name="OpacityHost" Orientation="Horizontal" />
                     </StackPanel>
 
