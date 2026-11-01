@@ -545,12 +545,14 @@ public partial class App : Application
         Check("名称自然排序（数字编号不乱序）", () =>
         {
             var c = DesktopOrganizer.Models.NaturalNameComparer.Instance;
+            // 自然排序：1 < 2 < 10
             if (c.Compare("1、xx", "2、xx") >= 0)
                 throw new InvalidOperationException("1 应排在 2 之前");
             if (c.Compare("2、xx", "10、xx") >= 0)
                 throw new InvalidOperationException("2 应排在 10 之前");
-            if (c.Compare("10、xx", "2、xx") >= 0)
-                throw new InvalidOperationException("10 应排在 2 之后（字典序会错）");
+            // 关键反向校验：10 必须排在 2 之后，不能因字典序跑到 2 前面
+            if (c.Compare("10、xx", "2、xx") <= 0)
+                throw new InvalidOperationException("10 不应排在 2 之前（字典序会错）");
         });
 
         Say($"=== 自检结束，失败 {failures} 项 ===");
