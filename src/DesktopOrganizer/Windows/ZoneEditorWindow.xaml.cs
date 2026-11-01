@@ -57,6 +57,13 @@ public partial class ZoneEditorWindow : Window
             NameBox.Text = existing.Name;
             FolderBox.Text = existing.FolderPath;
             _folderManuallyEdited = true;
+
+            NameFontSizeSlider.Value = existing.NameFontSize;
+            NameFontSizeValue.Text = ((int)existing.NameFontSize).ToString();
+            AlignLeftRadio.IsChecked = existing.NameAlignment != ZoneNameAlignment.Center;
+            AlignCenterRadio.IsChecked = existing.NameAlignment == ZoneNameAlignment.Center;
+            FrameFaintSlider.Value = existing.FrameFaint;
+            FrameFaintValue.Text = ((int)existing.FrameFaint).ToString();
         }
         else
         {
@@ -275,6 +282,20 @@ public partial class ZoneEditorWindow : Window
         base.OnKeyDown(e);
     }
 
+    private void OnFontSizeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        NameFontSizeValue.Text = ((int)NameFontSizeSlider.Value).ToString();
+        Validate();
+    }
+
+    private void OnFrameFaintChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        FrameFaintValue.Text = ((int)FrameFaintSlider.Value).ToString();
+        Validate();
+    }
+
+    private void OnAlignChanged(object sender, RoutedEventArgs e) => Validate();
+
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
     private void Confirm_Click(object sender, RoutedEventArgs e)
@@ -294,6 +315,11 @@ public partial class ZoneEditorWindow : Window
             _existing.Name = name;
             _existing.FolderPath = folder;
             _existing.Accent = _selectedAccent;
+            _existing.NameFontSize = NameFontSizeSlider.Value;
+            _existing.NameAlignment = AlignCenterRadio.IsChecked == true
+                ? ZoneNameAlignment.Center
+                : ZoneNameAlignment.Left;
+            _existing.FrameFaint = FrameFaintSlider.Value;
             Result = _existing;
         }
         else
@@ -304,6 +330,11 @@ public partial class ZoneEditorWindow : Window
                 FolderPath = folder,
                 Accent = _selectedAccent,
                 SortMode = _defaultSortMode,
+                NameFontSize = NameFontSizeSlider.Value,
+                NameAlignment = AlignCenterRadio.IsChecked == true
+                    ? ZoneNameAlignment.Center
+                    : ZoneNameAlignment.Left,
+                FrameFaint = FrameFaintSlider.Value,
             };
         }
 

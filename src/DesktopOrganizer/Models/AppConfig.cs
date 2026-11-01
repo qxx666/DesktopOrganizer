@@ -38,7 +38,7 @@ public sealed class AppConfig
     /// <summary>条目宽度档位：0 = 紧凑，1 = 标准，2 = 宽松。</summary>
     public int ItemWidthMode { get; set; } = 1;
 
-    /// <summary>分区背景不透明度 0.3 ~ 1.0。</summary>
+    /// <summary>分区背景不透明度 0.3 ~ 1.0。在玻璃模式下它控制白磨砂的浓淡。</summary>
     public double PanelOpacity { get; set; } = 0.78;
 
     public ZoneAppearance Appearance { get; set; } = ZoneAppearance.Dark;
@@ -50,6 +50,9 @@ public sealed class AppConfig
     public bool ShowHiddenFiles { get; set; }
 
     public ZoneSortMode DefaultSortMode { get; set; } = ZoneSortMode.Name;
+
+    /// <summary>是否启用 Windows 11 原生玻璃（Acrylic）材质。关闭则回退为实色面板。默认开启。</summary>
+    public bool EnableGlass { get; set; } = true;
 
     [JsonIgnore]
     public bool HasBeenInitialized { get; set; }

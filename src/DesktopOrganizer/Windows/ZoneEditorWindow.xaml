@@ -99,6 +99,51 @@
                 <TextBlock Text="强调色" Style="{StaticResource SectionTitle}" Margin="0,18,0,7" />
                 <StackPanel x:Name="SwatchHost" Orientation="Horizontal" />
 
+                <TextBlock Text="标题样式" Style="{StaticResource SectionTitle}" Margin="0,18,0,7" />
+
+                <Grid Margin="0,0,0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="72" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="40" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="名称字号" Style="{StaticResource HintText}" Grid.Column="0" VerticalAlignment="Center" />
+                    <Slider x:Name="NameFontSizeSlider" Grid.Column="1" Minimum="11" Maximum="34"
+                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="6,0"
+                            Foreground="{StaticResource TextPrimary}" ValueChanged="OnFontSizeChanged" />
+                    <TextBlock x:Name="NameFontSizeValue" Grid.Column="2" Style="{StaticResource HintText}"
+                               VerticalAlignment="Center" Text="20" />
+                </Grid>
+
+                <Grid Margin="0,8,0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="72" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="名称对齐" Style="{StaticResource HintText}" Grid.Column="0" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="6,0,0,0">
+                        <RadioButton x:Name="AlignLeftRadio" Content="居左" GroupName="NameAlign"
+                                     Margin="0,0,16,0" Foreground="{StaticResource TextPrimary}"
+                                     IsChecked="True" Checked="OnAlignChanged" />
+                        <RadioButton x:Name="AlignCenterRadio" Content="居中" GroupName="NameAlign"
+                                     Foreground="{StaticResource TextPrimary}" Checked="OnAlignChanged" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,8,0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="72" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="40" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="外框淡化" Style="{StaticResource HintText}" Grid.Column="0" VerticalAlignment="Center" />
+                    <Slider x:Name="FrameFaintSlider" Grid.Column="1" Minimum="0" Maximum="100"
+                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="6,0"
+                            Foreground="{StaticResource TextPrimary}" ValueChanged="OnFrameFaintChanged" />
+                    <TextBlock x:Name="FrameFaintValue" Grid.Column="2" Style="{StaticResource HintText}"
+                               VerticalAlignment="Center" Text="25" />
+                </Grid>
+
             </StackPanel>
 
             <!-- 底部按钮 -->

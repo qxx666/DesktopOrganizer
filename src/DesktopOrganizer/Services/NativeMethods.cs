@@ -154,4 +154,36 @@ internal static class NativeMethods
         [PreserveSig] int Remove(int i);
         [PreserveSig] int GetIcon(int i, int flags, ref IntPtr picon);
     }
+
+    // ---------- DWM 玻璃材质（Windows 11 Acrylic / 圆角） ----------
+
+    internal const int DWMWA_SYSTEMBACKDROP_TYPE = 38;   // 0x26
+    internal const int DWMWA_WINDOW_CORNER_PREFERENCE = 33; // 0x21
+
+    internal const int DWMSBT_AUTO = 0;
+    internal const int DWMSBT_NONE = 1;
+    internal const int DWMSBT_MAINWINDOW = 2;             // Mica
+    internal const int DWMSBT_TRANSIENTWINDOW = 3;         // Acrylic
+    internal const int DWMSBT_TABBEDWINDOW = 4;
+
+    internal const int DWMWCP_DEFAULT = 0;
+    internal const int DWMWCP_DONOTROUND = 1;
+    internal const int DWMWCP_ROUND = 2;
+    internal const int DWMWCP_ROUNDSMALL = 3;
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MARGINS
+    {
+        public int cxLeftWidth;
+        public int cxRightWidth;
+        public int cyTopHeight;
+        public int cyBottomHeight;
+    }
+
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS pMargins);
+
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmSetWindowAttribute(
+        IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
 }

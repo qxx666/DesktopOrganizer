@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using System.Windows.Interop;
 using DesktopOrganizer.Models;
 using DesktopOrganizer.Services;
 
@@ -51,6 +52,9 @@ public partial class ZoneWindow : Window
     // ---- 右键菜单 ----
     private FileItemViewModel? _contextItem;
 
+    // ---- 玻璃材质 ----
+    private bool _glassOn;
+
     public ZoneWindow(ZoneConfig zone)
     {
         _zone = zone ?? throw new ArgumentNullException(nameof(zone));
@@ -77,6 +81,13 @@ public partial class ZoneWindow : Window
 
         Loaded += (_, _) => RefreshItems();
         Closed += OnClosedInternal;
+
+        // 窗口句柄就绪后再挂玻璃材质，此时 hwnd 才有效
+        SourceInitialized += (_, _) =>
+        {
+            ApplyGlass();
+            ApplyAppearance();
+        };
     }
 
     public ZoneConfig Config => _zone;
@@ -138,23 +149,45 @@ public partial class ZoneWindow : Window
         var config = ZoneManager.Instance.Config;
         var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
         var dark = config.Appearance == ZoneAppearance.Dark;
-        var opacity = Math.Clamp(config.PanelOpacity, 0.30, 1.0);
 
-        var accentAlpha = (byte)Math.Clamp(0x50 + (opacity - 0.3) * 90, 0x40, 0xB0);
+        // ---- 玻璃 / 降级背景 ----
+        if (_glassOn)
+        {
+            // 玻璃之上叠一层白（或深）磨砂，浓度由 PanelOpacity 控制
+            var glassAlpha = Math.Clamp(config.PanelOpacity, 0.12, 0.85);
+            RootPanel.Background = new SolidColorBrush(WithAlpha(
+                dark ? Color.FromRgb(0x1C, 0x20, 0x28) : Color.FromRgb(0xFF, 0xFF, 0xFF), glassAlpha));
+            Background = null; // 让 DWM 玻璃透出
+            PanelShadow.Opacity = 0; // 玻璃自身有层次，去掉重复外阴影
+        }
+        else
+        {
+            // 降级：non-layered 窗口无法半透明，用实色面板保证可见、不黑屏
+            var solid = new SolidColorBrush(
+                dark ? Color.FromRgb(0x1C, 0x20, 0x28) : Color.FromRgb(0xF8, 0xF9, 0xFC));
+            RootPanel.Background = solid;
+            Background = solid;
+            PanelShadow.Opacity = 0.38;
+        }
 
-        RootPanel.Background = new SolidColorBrush(WithAlpha(
-            dark ? Color.FromRgb(0x1C, 0x20, 0x28) : Color.FromRgb(0xF8, 0xF9, 0xFC), opacity));
+        // ---- 外框淡化（极淡高光线）----
+        RestoreFrameBorder();
 
-        RootPanel.BorderBrush = new SolidColorBrush(WithAlpha(accent, 0x60));
-
-        HeaderBar.Background = new SolidColorBrush(WithAlpha(accent, accentAlpha));
+        // ---- 标题栏透明，让玻璃 / 实色统一透出（名称浮在上方）----
+        HeaderBar.Background = null;
         HeaderBar.CornerRadius = _zone.Collapsed
             ? new CornerRadius(11)
             : new CornerRadius(11, 11, 0, 0);
 
         AccentDot.Fill = new SolidColorBrush(accent);
 
+        // ---- 分区名称：字号 + 对齐 ----
         TitleText.Text = _zone.Name;
+        TitleText.FontSize = Math.Clamp(_zone.NameFontSize, 11, 40);
+        TitleText.HorizontalAlignment = HorizontalAlignment.Stretch;
+        TitleText.TextAlignment = _zone.NameAlignment == ZoneNameAlignment.Center
+            ? TextAlignment.Center
+            : TextAlignment.Left;
         TitleText.Foreground = new SolidColorBrush(
             dark ? Color.FromRgb(0xF2, 0xF5, 0xFA) : Color.FromRgb(0x16, 0x1B, 0x25));
 
@@ -173,6 +206,64 @@ public partial class ZoneWindow : Window
 
         ApplyTopmost();
         RefreshItems();
+    }
+
+    /// <summary>在当前窗口上启用 Windows 11 原生 Acrylic 玻璃材质。失败则降级为实色面板。</summary>
+    private void ApplyGlass()
+    {
+        _glassOn = false;
+
+        if (!ZoneManager.Instance.Config.EnableGlass)
+        {
+            return;
+        }
+
+        try
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd == IntPtr.Zero)
+            {
+                return;
+            }
+
+            // 把玻璃 frame 延伸到整个客户区
+            var margins = new NativeMethods.MARGINS
+            {
+                cxLeftWidth = -1,
+                cxRightWidth = -1,
+                cyTopHeight = -1,
+                cyBottomHeight = -1,
+            };
+            NativeMethods.DwmExtendFrameIntoClientArea(hwnd, ref margins);
+
+            // 圆角窗口
+            var corner = NativeMethods.DWMWCP_ROUND;
+            NativeMethods.DwmSetWindowAttribute(
+                hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(int));
+
+            // 真正的毛玻璃（Acrylic）
+            var backdrop = NativeMethods.DWMSBT_TRANSIENTWINDOW;
+            NativeMethods.DwmSetWindowAttribute(
+                hwnd, NativeMethods.DWMWA_SYSTEMBACKDROP_TYPE, ref backdrop, sizeof(int));
+
+            _glassOn = true;
+        }
+        catch
+        {
+            // 老系统 / 关闭透明效果时 API 不可用，保持 _glassOn=false 走降级
+            _glassOn = false;
+        }
+    }
+
+    /// <summary>按 FrameFaint 把外框刷成极淡的高光线（或彻底无边框）。</summary>
+    private void RestoreFrameBorder()
+    {
+        var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
+        var faint = Math.Clamp(_zone.FrameFaint, 0, 100);
+        var borderAlpha = 0.04 + (faint / 100.0) * 0.5; // 0.04 ~ 0.54
+
+        RootPanel.BorderBrush = new SolidColorBrush(WithAlpha(accent, borderAlpha));
+        RootPanel.BorderThickness = new Thickness(faint <= 0 ? 0 : 1);
     }
 
     public void ApplyTopmost()
@@ -677,9 +768,11 @@ public partial class ZoneWindow : Window
     {
         var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
 
+        // 拖入时边框高亮为强调色实线；移开时恢复淡化高光线
         RootPanel.BorderBrush = active
             ? new SolidColorBrush(accent)
-            : new SolidColorBrush(WithAlpha(accent, 0x60));
+            : new SolidColorBrush(WithAlpha(
+                accent, 0.04 + (Math.Clamp(_zone.FrameFaint, 0, 100) / 100.0) * 0.5));
     }
 
     /// <summary>成功收纳文件后，边框闪一下表示完成。</summary>
@@ -691,7 +784,9 @@ public partial class ZoneWindow : Window
             var brush = new SolidColorBrush(Colors.White);
             RootPanel.BorderBrush = brush;
 
-            var animation = new ColorAnimation(WithAlpha(accent, 0x60), TimeSpan.FromMilliseconds(650))
+            // 闪光结束后回到淡化边框，而不是显眼的实色
+            var target = WithAlpha(accent, 0.04 + (Math.Clamp(_zone.FrameFaint, 0, 100) / 100.0) * 0.5);
+            var animation = new ColorAnimation(target, TimeSpan.FromMilliseconds(650))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
             };

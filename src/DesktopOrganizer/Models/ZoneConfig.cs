@@ -19,6 +19,13 @@ public enum ZoneAppearance
     Light,
 }
 
+/// <summary>分区名称（标题）的对齐方式。</summary>
+public enum ZoneNameAlignment
+{
+    Left,
+    Center,
+}
+
 /// <summary>
 /// 一个桌面分区的持久化配置。每个分区绑定磁盘上的一个真实文件夹。
 /// </summary>
@@ -50,6 +57,15 @@ public sealed class ZoneConfig
 
     /// <summary>是否参与「显示 / 隐藏」的整体切换。</summary>
     public bool Visible { get; set; } = true;
+
+    /// <summary>分区名称（标题）显示字号，单位 DIP。默认 20，建议范围 11~40。</summary>
+    public double NameFontSize { get; set; } = 20;
+
+    /// <summary>分区名称对齐方式：居左或居中，默认居左。</summary>
+    public ZoneNameAlignment NameAlignment { get; set; } = ZoneNameAlignment.Left;
+
+    /// <summary>外框淡化程度 0~100，越大边框越明显。默认 25（很淡的玻璃高光线）。</summary>
+    public double FrameFaint { get; set; } = 25;
 
     public ZoneConfig Clone() => (ZoneConfig)MemberwiseClone();
 }
