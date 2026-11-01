@@ -46,6 +46,19 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- 缩放握把：仅作透明命中区域，不画任何边框/背景，避免 WPF 默认 Thumb 模板
+             在四角和四条边渲染出可见的描边方块（被误认成分区框的粗边框）。拖拽缩放仍可用。 -->
+        <Style x:Key="ResizeThumb" TargetType="Thumb">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="Transparent" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!-- 根容器：玻璃卡片 RootPanel 在下，缩放热区在上（放在玻璃层之外，避免圆角裁掉角落拖拽握把） -->
@@ -287,31 +300,31 @@
             </Grid>
         </Border>
 
-        <!-- ======================= 缩放热区（在玻璃层之上、不裁切） ======================= -->
-        <Thumb x:Name="ThumbN" Height="6" Margin="18,0,18,0"
+        <!-- ======================= 缩放热区（透明命中区域，不渲染任何边框） ======================= -->
+        <Thumb x:Name="ThumbN" Style="{StaticResource ResizeThumb}" Height="6" Margin="18,0,18,0"
                VerticalAlignment="Top" HorizontalAlignment="Stretch" Cursor="SizeNS"
                DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-        <Thumb x:Name="ThumbS" Height="6" Margin="18,0,18,0"
+        <Thumb x:Name="ThumbS" Style="{StaticResource ResizeThumb}" Height="6" Margin="18,0,18,0"
                VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Cursor="SizeNS"
                DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-        <Thumb x:Name="ThumbW" Width="6" Margin="0,18,0,18"
+        <Thumb x:Name="ThumbW" Style="{StaticResource ResizeThumb}" Width="6" Margin="0,18,0,18"
                VerticalAlignment="Stretch" HorizontalAlignment="Left" Cursor="SizeWE"
                DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-        <Thumb x:Name="ThumbE" Width="6" Margin="0,18,0,18"
+        <Thumb x:Name="ThumbE" Style="{StaticResource ResizeThumb}" Width="6" Margin="0,18,0,18"
                VerticalAlignment="Stretch" HorizontalAlignment="Right" Cursor="SizeWE"
                DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-        <Thumb x:Name="ThumbNW" Width="14" Height="14"
+        <Thumb x:Name="ThumbNW" Style="{StaticResource ResizeThumb}" Width="14" Height="14"
                VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="SizeNWSE"
                DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-        <Thumb x:Name="ThumbNE" Width="14" Height="14"
+        <Thumb x:Name="ThumbNE" Style="{StaticResource ResizeThumb}" Width="14" Height="14"
                VerticalAlignment="Top" HorizontalAlignment="Right" Cursor="SizeNESW"
                DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
-        <Thumb x:Name="ThumbSW" Width="14" Height="14"
+        <Thumb x:Name="ThumbSW" Style="{StaticResource ResizeThumb}" Width="14" Height="14"
                VerticalAlignment="Bottom" HorizontalAlignment="Left" Cursor="SizeNESW"
                DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
 
-        <!-- 右下角：可见的缩放握把 + 热区 -->
-        <Thumb x:Name="ThumbSE" Width="18" Height="18"
+        <!-- 右下角：缩放握把（透明，仅命中区域） -->
+        <Thumb x:Name="ThumbSE" Style="{StaticResource ResizeThumb}" Width="18" Height="18"
                VerticalAlignment="Bottom" HorizontalAlignment="Right" Cursor="SizeNWSE"
                DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted" />
 
