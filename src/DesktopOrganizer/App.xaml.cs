@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -315,8 +316,27 @@ public partial class App : Application
         }
 
         var root = inner ?? ex;
-        return $"{root.GetType().Name}：{root.Message}" +
+        var text = $"{root.GetType().Name}：{root.Message}" +
                (ReferenceEquals(root, ex) ? string.Empty : $"\n（外层：{ex.GetType().Name}）");
+
+        // 带上与本项目相关的堆栈节选，用户截图报错框即可直接回报，不必再去翻日志
+        var stack = root.StackTrace ?? ex.StackTrace;
+        if (!string.IsNullOrEmpty(stack))
+        {
+            var frames = stack
+                .Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(l => l.Trim())
+                .Where(l => l.Contains("DesktopOrganizer"))
+                .Take(3)
+                .ToArray();
+
+            if (frames.Length > 0)
+            {
+                text += "\n\n堆栈（节选）：\n" + string.Join("\n", frames);
+            }
+        }
+
+        return text;
     }
 
     private static string? _selfTestOut;
@@ -431,6 +451,40 @@ public partial class App : Application
             if (block.DesiredSize.Width <= 0 || block.DesiredSize.Height <= 0)
             {
                 throw new InvalidOperationException($"布局尺寸异常：{block.DesiredSize}");
+            }
+        });
+
+        // 复刻 ZoneWindow.xaml 里 FontFamily="{x:Static NameFontFamily}" 的真实写入路径。
+        // x:Static 把成员值**原样**写进 FontFamily 依赖属性，若 NameFontFamily 是 string 而非
+        // FontFamily，运行时 GetTypeface 强转会 InvalidCastException（v1.1.2 真机崩溃就是这个）。
+        // 这里用反射拿到 x:Static 会拿到的同一个值，直接 SetValue 进去再 Measure，等于把那条
+        // 崩溃路径搬到 CI 上，谁再写回 string 常量编译能过但 CI 立刻红。
+        Check("名称 TextBlock 字体（模拟 XAML x:Static 绑定）", () =>
+        {
+            var field = typeof(DesktopOrganizer.Models.FileItemViewModel)
+                .GetField(nameof(DesktopOrganizer.Models.FileItemViewModel.NameFontFamily))
+                ?? throw new InvalidOperationException("找不到 NameFontFamily 字段");
+            var value = field.GetValue(null);
+
+            if (value is not System.Windows.Media.FontFamily)
+            {
+                throw new InvalidOperationException(
+                    $"NameFontFamily 必须是 FontFamily，但当前是 {value?.GetType().Name}，XAML 绑定会崩溃");
+            }
+
+            var block = new System.Windows.Controls.TextBlock
+            {
+                Text = "测试文件名 test 123",
+                FontSize = 11,
+                TextWrapping = System.Windows.TextWrapping.Wrap,
+            };
+
+            // 关键：模拟 x:Static 把原始值写进依赖属性，而不是走 CLR 属性 setter 的类型转换
+            block.SetValue(System.Windows.Controls.TextBlock.FontFamilyProperty, value);
+            block.Measure(new System.Windows.Size(160, 200));
+            if (block.DesiredSize.Height <= 0)
+            {
+                throw new InvalidOperationException($"布局高度异常：{block.DesiredSize}");
             }
         });
 

@@ -20,8 +20,11 @@ public sealed class FileItemViewModel
     /// <summary>名称行高，与 ZoneWindow 里显示名称的 TextBlock 保持一致。</summary>
     public const double NameLineHeight = 13;
 
-    /// <summary>名称字体，与 ZoneWindow 里显示名称的 TextBlock 保持一致（测量宽度时必须一致）。</summary>
-    public const string NameFontFamily = "Microsoft YaHei UI, Segoe UI";
+    /// <summary>名称字体，与 ZoneWindow 里显示名称的 TextBlock 保持一致（测量宽度时必须一致）。
+    /// 必须是 <see cref="FontFamily"/> 对象而绝不能是用 string 常量：XAML 用 {x:Static} 引用时，
+    /// string 会原样写进 FontFamily 依赖属性、不会被 FontFamilyConverter 转换，运行时
+    /// GetTypeface 里 (FontFamily)GetValue(...) 强转直接 InvalidCastException 崩溃（v1.1.3 修）。</summary>
+    public static readonly FontFamily NameFontFamily = new FontFamily("Microsoft YaHei UI, Segoe UI");
 
     public required string FullPath { get; init; }
 
@@ -222,7 +225,7 @@ public sealed class FileItemViewModel
                 culture,
                 FlowDirection.LeftToRight,
                 new Typeface(
-                    new FontFamily(NameFontFamily),
+                    NameFontFamily,
                     FontStyles.Normal,
                     FontWeights.Normal,
                     FontStretches.Normal),
