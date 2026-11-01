@@ -52,9 +52,6 @@ public partial class ZoneWindow : Window
     // ---- 右键菜单 ----
     private FileItemViewModel? _contextItem;
 
-    // ---- 玻璃材质 ----
-    private bool _glassOn;
-
     public ZoneWindow(ZoneConfig zone)
     {
         _zone = zone ?? throw new ArgumentNullException(nameof(zone));
@@ -82,12 +79,8 @@ public partial class ZoneWindow : Window
         Loaded += (_, _) => RefreshItems();
         Closed += OnClosedInternal;
 
-        // 窗口句柄就绪后再挂玻璃材质，此时 hwnd 才有效
-        SourceInitialized += (_, _) =>
-        {
-            ApplyGlass();
-            ApplyAppearance();
-        };
+        // 窗口句柄就绪后确保外观已应用（外观不依赖 DWM，纯 WPF 半透明）
+        SourceInitialized += (_, _) => ApplyAppearance();
     }
 
     public ZoneConfig Config => _zone;
@@ -150,31 +143,20 @@ public partial class ZoneWindow : Window
         var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
         var dark = config.Appearance == ZoneAppearance.Dark;
 
-        // ---- 玻璃 / 降级背景 ----
-        if (_glassOn)
-        {
-            // 玻璃之上叠一层白（或深）磨砂，浓度由 PanelOpacity 控制
-            var glassAlpha = Math.Clamp(config.PanelOpacity, 0.12, 0.85);
-            RootPanel.Background = new SolidColorBrush(WithAlpha(
-                dark ? Color.FromRgb(0x1C, 0x20, 0x28) : Color.FromRgb(0xFF, 0xFF, 0xFF), glassAlpha));
-            Background = null; // 让 DWM 玻璃透出
-            PanelShadow.Opacity = 0; // 玻璃自身有层次，去掉重复外阴影
-        }
-        else
-        {
-            // 降级：non-layered 窗口无法半透明，用实色面板保证可见、不黑屏
-            var solid = new SolidColorBrush(
-                dark ? Color.FromRgb(0x1C, 0x20, 0x28) : Color.FromRgb(0xF8, 0xF9, 0xFC));
-            RootPanel.Background = solid;
-            Background = solid;
-            PanelShadow.Opacity = 0.38;
-        }
+        // ---- 玻璃 / 面板背景（半透明 layered，保证对比度，绝不全透/纯白）----
+        var baseColor = dark ? Color.FromRgb(0x20, 0x24, 0x2E) : Color.FromRgb(0xF7, 0xF9, 0xFC);
+        var panelAlpha = config.EnableGlass
+            ? Math.Clamp(config.PanelOpacity, 0.60, 0.97)
+            : 1.0;
+        RootPanel.Background = new SolidColorBrush(WithAlpha(baseColor, panelAlpha));
+        Background = Brushes.Transparent; // layered 透明：圆角外透出桌面，玻璃感来自半透明叠色
+        PanelShadow.Opacity = 0.40;
 
         // ---- 外框淡化（极淡高光线）----
         RestoreFrameBorder();
 
-        // ---- 标题栏透明，让玻璃 / 实色统一透出（名称浮在上方）----
-        HeaderBar.Background = null;
+        // ---- 标题栏：同色略深一档，制造层次，名称浮在上方 ----
+        HeaderBar.Background = new SolidColorBrush(WithAlpha(baseColor, Math.Min(0.97, panelAlpha + 0.10)));
         HeaderBar.CornerRadius = _zone.Collapsed
             ? new CornerRadius(11)
             : new CornerRadius(11, 11, 0, 0);
@@ -206,53 +188,6 @@ public partial class ZoneWindow : Window
 
         ApplyTopmost();
         RefreshItems();
-    }
-
-    /// <summary>在当前窗口上启用 Windows 11 原生 Acrylic 玻璃材质。失败则降级为实色面板。</summary>
-    private void ApplyGlass()
-    {
-        _glassOn = false;
-
-        if (!ZoneManager.Instance.Config.EnableGlass)
-        {
-            return;
-        }
-
-        try
-        {
-            var hwnd = new WindowInteropHelper(this).Handle;
-            if (hwnd == IntPtr.Zero)
-            {
-                return;
-            }
-
-            // 把玻璃 frame 延伸到整个客户区
-            var margins = new NativeMethods.MARGINS
-            {
-                cxLeftWidth = -1,
-                cxRightWidth = -1,
-                cyTopHeight = -1,
-                cyBottomHeight = -1,
-            };
-            NativeMethods.DwmExtendFrameIntoClientArea(hwnd, ref margins);
-
-            // 圆角窗口
-            var corner = NativeMethods.DWMWCP_ROUND;
-            NativeMethods.DwmSetWindowAttribute(
-                hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(int));
-
-            // 真正的毛玻璃（Acrylic）
-            var backdrop = NativeMethods.DWMSBT_TRANSIENTWINDOW;
-            NativeMethods.DwmSetWindowAttribute(
-                hwnd, NativeMethods.DWMWA_SYSTEMBACKDROP_TYPE, ref backdrop, sizeof(int));
-
-            _glassOn = true;
-        }
-        catch
-        {
-            // 老系统 / 关闭透明效果时 API 不可用，保持 _glassOn=false 走降级
-            _glassOn = false;
-        }
     }
 
     /// <summary>按 FrameFaint 把外框刷成极淡的高光线（或彻底无边框）。</summary>

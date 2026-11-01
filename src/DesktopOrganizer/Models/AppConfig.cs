@@ -38,10 +38,10 @@ public sealed class AppConfig
     /// <summary>条目宽度档位：0 = 紧凑，1 = 标准，2 = 宽松。</summary>
     public int ItemWidthMode { get; set; } = 1;
 
-    /// <summary>分区背景不透明度 0.3 ~ 1.0。在玻璃模式下它控制白磨砂的浓淡。</summary>
+    /// <summary>分区背景不透明度 0.3 ~ 1.0。在玻璃（半透明）模式下它控制磨砂的浓淡，实际生效区间被夹到 0.60~0.97 以保证文字清晰。</summary>
     public double PanelOpacity { get; set; } = 0.78;
 
-    public ZoneAppearance Appearance { get; set; } = ZoneAppearance.Dark;
+    public ZoneAppearance Appearance { get; set; } = ZoneAppearance.Light;
 
     /// <summary>拖动分区时自动吸附对齐。</summary>
     public bool SnapEnabled { get; set; } = true;
@@ -51,7 +51,7 @@ public sealed class AppConfig
 
     public ZoneSortMode DefaultSortMode { get; set; } = ZoneSortMode.Name;
 
-    /// <summary>是否启用 Windows 11 原生玻璃（Acrylic）材质。关闭则回退为实色面板。默认开启。</summary>
+    /// <summary>是否启用半透明玻璃效果（纯 WPF layered 半透明，非 DWM Acrylic）。关闭则使用不透明实色面板。默认开启。</summary>
     public bool EnableGlass { get; set; } = true;
 
     [JsonIgnore]
