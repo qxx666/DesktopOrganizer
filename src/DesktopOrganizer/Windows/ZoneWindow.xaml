@@ -57,10 +57,10 @@
                 SnapsToDevicePixels="True">
             <Border.Effect>
                 <DropShadowEffect x:Name="PanelShadow"
-                                  BlurRadius="32"
-                                  ShadowDepth="6"
+                                  BlurRadius="14"
+                                  ShadowDepth="2"
                                   Direction="270"
-                                  Opacity="0.30"
+                                  Opacity="0.18"
                                   Color="#000000" />
             </Border.Effect>
 

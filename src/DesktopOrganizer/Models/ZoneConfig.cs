@@ -58,11 +58,11 @@ public sealed class ZoneConfig
     /// <summary>是否参与「显示 / 隐藏」的整体切换。</summary>
     public bool Visible { get; set; } = true;
 
-    /// <summary>分区名称（标题）显示字号，单位 DIP。默认 20，建议范围 11~40。</summary>
-    public double NameFontSize { get; set; } = 20;
+    /// <summary>分区名称（标题）显示字号，单位 DIP。默认 24，建议范围 11~40。</summary>
+    public double NameFontSize { get; set; } = 24;
 
-    /// <summary>分区名称对齐方式：居左或居中，默认居左。</summary>
-    public ZoneNameAlignment NameAlignment { get; set; } = ZoneNameAlignment.Left;
+    /// <summary>分区名称对齐方式：居左或居中，默认居中。</summary>
+    public ZoneNameAlignment NameAlignment { get; set; } = ZoneNameAlignment.Center;
 
     /// <summary>外框淡化程度 0~100，越大边框越明显。默认 25（很淡的玻璃高光线）。</summary>
     public double FrameFaint { get; set; } = 25;

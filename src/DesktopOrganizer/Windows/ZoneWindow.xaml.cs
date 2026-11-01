@@ -155,7 +155,11 @@ public partial class ZoneWindow : Window
             WithAlpha(baseColor, panelAlpha),
             new Point(0, 0), new Point(1, 1));
         Background = Brushes.Transparent; // layered 透明：圆角外透出桌面，玻璃感来自半透明叠色 + 渐变
-        PanelShadow.Opacity = 0.30;
+        // 极淡的贴边阴影：只做轻微的悬浮层次，不再用粗重的阴影/边框去框住卡片
+        PanelShadow.Color = Colors.Black;
+        PanelShadow.BlurRadius = 14;
+        PanelShadow.ShadowDepth = 2;
+        PanelShadow.Opacity = 0.18;
 
         // ---- 极淡高光描边（参考图：薄薄一层白边，不再用饱和强调色厚边）----
         RestoreFrameBorder();
@@ -715,16 +719,16 @@ public partial class ZoneWindow : Window
         if (active)
         {
             PanelShadow.Color = accent;
-            PanelShadow.Opacity = 0.55;
-            PanelShadow.BlurRadius = 42;
-            PanelShadow.ShadowDepth = 8;
+            PanelShadow.Opacity = 0.40;
+            PanelShadow.BlurRadius = 24;
+            PanelShadow.ShadowDepth = 2;
         }
         else
         {
             PanelShadow.Color = Colors.Black;
-            PanelShadow.Opacity = 0.30;
-            PanelShadow.BlurRadius = 32;
-            PanelShadow.ShadowDepth = 6;
+            PanelShadow.Opacity = 0.18;
+            PanelShadow.BlurRadius = 14;
+            PanelShadow.ShadowDepth = 2;
         }
     }
 
@@ -733,21 +737,21 @@ public partial class ZoneWindow : Window
     {
         try
         {
-            // 先亮一下白色光晕
+            // 先亮一下白色光晕（克制，不喧宾夺主）
             PanelShadow.Color = Colors.White;
-            PanelShadow.Opacity = 0.85;
-            PanelShadow.BlurRadius = 48;
-            PanelShadow.ShadowDepth = 6;
+            PanelShadow.Opacity = 0.45;
+            PanelShadow.BlurRadius = 26;
+            PanelShadow.ShadowDepth = 2;
 
             var colorAnim = new ColorAnimation(Colors.Black, TimeSpan.FromMilliseconds(650))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
             };
-            var opacityAnim = new DoubleAnimation(0.30, TimeSpan.FromMilliseconds(650))
+            var opacityAnim = new DoubleAnimation(0.18, TimeSpan.FromMilliseconds(650))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
             };
-            var blurAnim = new DoubleAnimation(32, TimeSpan.FromMilliseconds(650))
+            var blurAnim = new DoubleAnimation(14, TimeSpan.FromMilliseconds(650))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
             };
