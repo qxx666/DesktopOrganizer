@@ -144,22 +144,11 @@ public partial class ZoneWindow : Window
         var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
         var dark = config.Appearance == ZoneAppearance.Dark;
 
-        // ---- 玻璃背景：半透明 layered + 对角渐变晕染，营造磨砂玻璃的柔和层次 ----
-        var baseColor = dark ? Color.FromRgb(0x20, 0x24, 0x2E) : Color.FromRgb(0xF7, 0xF9, 0xFC);
-        var panelAlpha = config.EnableGlass
-            ? Math.Clamp(config.PanelOpacity, 0.60, 0.97)
-            : 1.0;
-        var tint = Blend(baseColor, accent, dark ? 0.30 : 0.34); // 左上角带一点强调色晕染
-        RootPanel.Background = new LinearGradientBrush(
-            WithAlpha(tint, panelAlpha),
-            WithAlpha(baseColor, panelAlpha),
-            new Point(0, 0), new Point(1, 1));
         Background = Brushes.Transparent; // layered 透明：圆角外透出桌面，玻璃感来自半透明叠色 + 渐变
-        // 极淡的贴边阴影：只做轻微的悬浮层次，不再用粗重的阴影/边框去框住卡片
-        PanelShadow.Color = Colors.Black;
-        PanelShadow.BlurRadius = 14;
-        PanelShadow.ShadowDepth = 2;
-        PanelShadow.Opacity = 0.18;
+
+        // ---- 玻璃背景：半透明 layered + 对角渐变晕染，营造磨砂玻璃的柔和层次 ----
+        // 不用任何边框线、也不加阴影，纯靠圆角 + 半透明叠色区分层次，杜绝"边框"观感。
+        RootPanel.Background = BuildPanelBrush(highlight: false);
 
         // ---- 极淡高光描边（参考图：薄薄一层白边，不再用饱和强调色厚边）----
         RestoreFrameBorder();
@@ -195,13 +184,37 @@ public partial class ZoneWindow : Window
         RefreshItems();
     }
 
-    /// <summary>分区框采用无边框玻璃卡片风格：常态不画任何边框线，仅靠圆角+阴影区分层次。</summary>
+    /// <summary>分区框采用无边框玻璃卡片风格：常态不画任何边框线、也不加阴影，仅靠圆角+半透明叠色区分层次。</summary>
     private void RestoreFrameBorder()
     {
         // 不再渲染外框线条（线条已按需求去除）。边框厚度恒为 0，画笔透明，
         // 避免拖放/成功反馈残留后恢复时重新出现线条。
         RootPanel.BorderBrush = Brushes.Transparent;
         RootPanel.BorderThickness = new Thickness(0);
+    }
+
+    /// <summary>构造分区面板的玻璃渐变底色。highlight=true 时（拖入/收纳成功瞬间）略微提浓并加重强调色晕染，
+    /// 用底色变化代替原先的阴影光晕做反馈，避免任何类似边框的边缘观感。</summary>
+    private LinearGradientBrush BuildPanelBrush(bool highlight)
+    {
+        var config = ZoneManager.Instance.Config;
+        var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
+        var dark = config.Appearance == ZoneAppearance.Dark;
+        var baseColor = dark ? Color.FromRgb(0x20, 0x24, 0x2E) : Color.FromRgb(0xF7, 0xF9, 0xFC);
+        var panelAlpha = config.EnableGlass
+            ? Math.Clamp(config.PanelOpacity, 0.60, 0.97)
+            : 1.0;
+        if (highlight)
+        {
+            panelAlpha = Math.Min(1.0, panelAlpha + 0.12);
+        }
+
+        var tintWeight = (dark ? 0.30 : 0.34) + (highlight ? 0.10 : 0.0);
+        var tint = Blend(baseColor, accent, tintWeight); // 左上角带一点强调色晕染
+        return new LinearGradientBrush(
+            WithAlpha(tint, panelAlpha),
+            WithAlpha(baseColor, panelAlpha),
+            new Point(0, 0), new Point(1, 1));
     }
 
     public void ApplyTopmost()
@@ -713,52 +726,20 @@ public partial class ZoneWindow : Window
 
     private void SetDropHighlight(bool active)
     {
-        var accent = ParseColor(_zone.Accent, Color.FromRgb(0x4C, 0x8D, 0xFF));
-
-        // 无边框风格：拖入时用「强调色光晕阴影」代替边框线做高亮反馈
-        if (active)
-        {
-            PanelShadow.Color = accent;
-            PanelShadow.Opacity = 0.40;
-            PanelShadow.BlurRadius = 24;
-            PanelShadow.ShadowDepth = 2;
-        }
-        else
-        {
-            PanelShadow.Color = Colors.Black;
-            PanelShadow.Opacity = 0.18;
-            PanelShadow.BlurRadius = 14;
-            PanelShadow.ShadowDepth = 2;
-        }
+        // 无边框风格：拖入时用「玻璃底色略微加深 + 强调色晕染加重」代替边框线/阴影做高亮反馈
+        RootPanel.Background = BuildPanelBrush(highlight: active);
     }
 
-    /// <summary>成功收纳文件后，用一圈白色光晕闪烁代替边框线表示完成。</summary>
+    /// <summary>成功收纳文件后，用一次玻璃底色的轻微提亮脉冲代替边框线/光晕，表示完成。</summary>
     private void FlashSuccess()
     {
         try
         {
-            // 先亮一下白色光晕（克制，不喧宾夺主）
-            PanelShadow.Color = Colors.White;
-            PanelShadow.Opacity = 0.45;
-            PanelShadow.BlurRadius = 26;
-            PanelShadow.ShadowDepth = 2;
-
-            var colorAnim = new ColorAnimation(Colors.Black, TimeSpan.FromMilliseconds(650))
+            RootPanel.Background = BuildPanelBrush(highlight: true);
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            };
-            var opacityAnim = new DoubleAnimation(0.18, TimeSpan.FromMilliseconds(650))
-            {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            };
-            var blurAnim = new DoubleAnimation(14, TimeSpan.FromMilliseconds(650))
-            {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            };
-
-            PanelShadow.BeginAnimation(DropShadowEffect.ColorProperty, colorAnim);
-            PanelShadow.BeginAnimation(DropShadowEffect.OpacityProperty, opacityAnim);
-            PanelShadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, blurAnim);
+                RootPanel.Background = BuildPanelBrush(highlight: false);
+            }));
         }
         catch
         {
